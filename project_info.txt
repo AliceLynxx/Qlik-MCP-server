@@ -25,7 +25,26 @@ Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli vo
   - **Logging**: Uitgebreide logging voor debugging en monitoring
   - **Timeout handling**: Configureerbare timeouts voor langlopende operaties
 
+### FastMCP Server Implementatie
+- **app.py**: Hoofdbestand met werkende FastMCP server
+  - **MCP Tools**: Vier geregistreerde tools beschikbaar voor clients
+    - `qlik_app_build`: Bouw Qlik apps met alle qlik-cli parameters
+    - `qlik_app_unbuild`: Export Qlik apps naar component bestanden
+    - `qlik_cli_version`: Verkrijg qlik-cli versie informatie
+    - `qlik_validate_connection`: Test verbinding met Qlik Cloud
+  - **Pydantic Models**: Type-safe parameter validatie voor alle tools
+  - **Error Handling**: Comprehensive foutafhandeling met duidelijke error messages
+  - **Logging**: Gestructureerde logging naar console en bestand
+  - **Server Management**: Proper startup, shutdown en configuratie validatie
+
 ## Technische Details
+
+### MCP Server Functionaliteiten
+- **FastMCP Framework**: Moderne, snelle MCP server implementatie
+- **Tool Registration**: Automatische registratie van Qlik tools voor MCP clients
+- **Parameter Validation**: Pydantic models voor type-safe parameter handling
+- **Async Support**: Volledige ondersteuning voor asynchrone operaties
+- **Configuration Integration**: Naadloze integratie met config.py instellingen
 
 ### Qlik App Build Ondersteuning
 - Basis parameters: app identifier
@@ -40,21 +59,34 @@ Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli vo
 - No-data optie voor apps zonder data
 - Automatische generatie van config.yml
 
-### Error Handling
+### Error Handling & Logging
 - Subprocess timeout management
 - Qlik CLI error parsing en doorsturen
 - Parameter validatie vooraf
 - Uitgebreide logging van alle operaties
+- Log files voor debugging en monitoring
+- Configureerbare log levels
 
 ## Architectuur
 - **MCP Protocol**: Standaard Model Context Protocol implementatie
 - **FastMCP**: Framework voor snelle MCP server ontwikkeling
 - **Subprocess**: Interface naar qlik-cli executable
-- **Pydantic**: Type-safe configuratie management
+- **Pydantic**: Type-safe configuratie en parameter management
 - **Logging**: Gestructureerde logging voor monitoring
 
+## Gebruik
+De server kan gestart worden met:
+```bash
+python app.py
+```
+
+MCP clients kunnen vervolgens verbinding maken en de volgende tools gebruiken:
+- `qlik_app_build`: Voor het bouwen van Qlik applicaties
+- `qlik_app_unbuild`: Voor het exporteren van Qlik applicaties
+- `qlik_cli_version`: Voor versie informatie
+- `qlik_validate_connection`: Voor connectie validatie
+
 ## Volgende Stappen
-1. **FastMCP Server**: Implementatie van main.py met MCP tools
-2. **Testing**: Unit tests en integratie tests
-3. **Documentatie**: Uitgebreide gebruikershandleiding
-4. **Uitbreiding**: Meer qlik-cli commando's (reload, item management, etc.)
+1. **Testing**: Unit tests en integratie tests
+2. **Documentatie**: Uitgebreide gebruikershandleiding
+3. **Uitbreiding**: Meer qlik-cli commando's (reload, item management, etc.)
