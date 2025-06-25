@@ -1,54 +1,60 @@
-# Project Informatie - Qlik-MCP-server
+# Project Info - Qlik-MCP-server
 
-## Projectomschrijving
-Een Model Context Protocol (MCP) server die als interface dient tussen MCP clients en Qlik Cloud. De server maakt gebruik van de qlik-cli tool om Qlik Cloud functionaliteiten toegankelijk te maken via het MCP protocol.
+## Overzicht
+Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli voor het beheren van Qlik Cloud applicaties. Deze server stelt MCP clients in staat om Qlik apps te bouwen, uit te pakken en te beheren via een gestandaardiseerde interface.
 
-## Project doel, nut en functie
-**Doel**: Een naadloze integratie bieden tussen MCP clients en Qlik Cloud door middel van een gestandaardiseerde server interface.
+## Doelgroep
+- **Ontwikkelaars**: Die Qlik apps willen integreren in hun development workflow
+- **Data Analisten**: Die programmatisch Qlik apps willen beheren
+- **DevOps Engineers**: Die Qlik deployment processen willen automatiseren
+- **MCP Client Gebruikers**: Die Qlik functionaliteiten willen gebruiken via hun MCP client
 
-**Doelgroep**: 
-- Ontwikkelaars die Qlik Cloud functionaliteiten willen integreren in hun MCP-gebaseerde workflows
-- Data analisten die via MCP clients toegang willen tot Qlik apps
-- Organisaties die hun Qlik Cloud omgeving willen automatiseren via MCP
+## Huidige Functionaliteiten
 
-**Nut**: 
-- Vereenvoudigt de toegang tot Qlik Cloud functionaliteiten
-- Biedt een gestandaardiseerde interface voor Qlik operaties
-- Maakt automatisering van Qlik workflows mogelijk
-- Integreert Qlik in bredere MCP ecosystemen
+### Basis Infrastructuur
+- **config.py**: Configuratie management voor Qlik CLI en MCP server instellingen
+- **requirements.txt**: Dependency management met FastMCP en andere benodigde packages
+- **README.md**: Uitgebreide documentatie voor installatie en gebruik
 
-**Functie**:
-- Fungeert als MCP server die qlik-cli commando's kan uitvoeren
-- Biedt initieel ondersteuning voor qlik app build en unbuild operaties
-- Gebruikt FastMCP framework voor efficiënte MCP implementatie
-- Maakt gebruik van lokaal geïnstalleerde qlik-cli tool
+### Qlik CLI Integratie
+- **qlik_tools.py**: Kern module met QlikCLI klasse voor qlik-cli integratie
+  - **QlikCLI klasse**: Python interface naar qlik-cli commando's
+  - **app_build()**: Volledige ondersteuning voor qlik app build met alle parameters
+  - **app_unbuild()**: Ondersteuning voor qlik app unbuild functionaliteit
+  - **Error handling**: Robuuste foutafhandeling en parameter validatie
+  - **Logging**: Uitgebreide logging voor debugging en monitoring
+  - **Timeout handling**: Configureerbare timeouts voor langlopende operaties
 
-## Architectuur/modulestructuur
+## Technische Details
 
-### Module: main.py
-- **Status**: Te implementeren
-- **Bestandsnaam**: main.py
-- **Pad**: /main.py
-- **Functionaliteit**: Hoofdbestand met FastMCP server implementatie en main() functie
-- **Afhankelijkheden**: FastMCP, qlik_tools.py
+### Qlik App Build Ondersteuning
+- Basis parameters: app identifier
+- Script en data: script files, no-data, no-reload, row limits
+- Resources: connections (yml), dimensions, measures, objects, variables, bookmarks (json)
+- App properties: json configuratie bestanden
+- Opties: no-save, silent mode
 
-### Module: qlik_tools.py
-- **Status**: Te implementeren
-- **Bestandsnaam**: qlik_tools.py
-- **Pad**: /qlik_tools.py
-- **Functionaliteit**: Module voor qlik-cli integratie en commando uitvoering
-- **Afhankelijkheden**: subprocess, json, yaml
+### Qlik App Unbuild Ondersteuning  
+- App export naar directory structuur
+- Configureerbare export directory
+- No-data optie voor apps zonder data
+- Automatische generatie van config.yml
 
-### Module: config.py
-- **Status**: Te implementeren
-- **Bestandsnaam**: config.py
-- **Pad**: /config.py
-- **Functionaliteit**: Configuratie en instellingen voor de MCP server
-- **Afhankelijkheden**: Geen
+### Error Handling
+- Subprocess timeout management
+- Qlik CLI error parsing en doorsturen
+- Parameter validatie vooraf
+- Uitgebreide logging van alle operaties
 
-### Module: requirements.txt
-- **Status**: Te implementeren
-- **Bestandsnaam**: requirements.txt
-- **Pad**: /requirements.txt
-- **Functionaliteit**: Python dependencies specificatie
-- **Afhankelijkheden**: Geen
+## Architectuur
+- **MCP Protocol**: Standaard Model Context Protocol implementatie
+- **FastMCP**: Framework voor snelle MCP server ontwikkeling
+- **Subprocess**: Interface naar qlik-cli executable
+- **Pydantic**: Type-safe configuratie management
+- **Logging**: Gestructureerde logging voor monitoring
+
+## Volgende Stappen
+1. **FastMCP Server**: Implementatie van main.py met MCP tools
+2. **Testing**: Unit tests en integratie tests
+3. **Documentatie**: Uitgebreide gebruikershandleiding
+4. **Uitbreiding**: Meer qlik-cli commando's (reload, item management, etc.)
