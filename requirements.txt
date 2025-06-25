@@ -1,0 +1,21 @@
+# Qlik-MCP-server Dependencies
+
+# FastMCP framework for MCP server implementation
+fastmcp>=0.1.0
+
+# Standard library extensions
+pydantic>=2.0.0
+typing-extensions>=4.0.0
+
+# For subprocess management and CLI integration
+subprocess32>=3.5.4; python_version < '3.0'
+
+# For configuration and data handling
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# For logging and debugging
+structlog>=23.0.0
+
+# For async operations
+asyncio-mqtt>=0.11.0
