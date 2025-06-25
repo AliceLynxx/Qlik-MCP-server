@@ -11,7 +11,7 @@ import logging
 import sys
 from typing import Dict, Any, List, Optional, Union
 
-from fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
 from config import Config
