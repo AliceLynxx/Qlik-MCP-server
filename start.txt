@@ -1,0 +1,43 @@
+# Qlik-MCP-server Project
+
+## Projectomschrijving
+Een Model Context Protocol (MCP) server die als interface dient tussen MCP clients en Qlik Cloud. De server maakt gebruik van de qlik-cli tool om Qlik Cloud functionaliteiten toegankelijk te maken via het MCP protocol.
+
+## Project doel, nut en functie
+**Doel**: Een naadloze integratie bieden tussen MCP clients en Qlik Cloud door middel van een gestandaardiseerde server interface.
+
+**Doelgroep**: 
+- Ontwikkelaars die Qlik Cloud functionaliteiten willen integreren in hun MCP-gebaseerde workflows
+- Data analisten die via MCP clients toegang willen tot Qlik apps
+- Organisaties die hun Qlik Cloud omgeving willen automatiseren via MCP
+
+**Nut**: 
+- Vereenvoudigt de toegang tot Qlik Cloud functionaliteiten
+- Biedt een gestandaardiseerde interface voor Qlik operaties
+- Maakt automatisering van Qlik workflows mogelijk
+- Integreert Qlik in bredere MCP ecosystemen
+
+**Functie**:
+- Fungeert als MCP server die qlik-cli commando's kan uitvoeren
+- Biedt initieel ondersteuning voor qlik app build en unbuild operaties
+- Gebruikt FastMCP framework voor efficiënte MCP implementatie
+- Maakt gebruik van lokaal geïnstalleerde qlik-cli tool
+
+## Architectuur/modulestructuur
+- **main.py**: Hoofdbestand met FastMCP server implementatie
+- **qlik_tools.py**: Module voor qlik-cli integratie en commando uitvoering
+- **config.py**: Configuratie en instellingen
+- **requirements.txt**: Python dependencies
+
+## Technische specificaties
+- Framework: FastMCP (from mcp.server.fastmcp import FastMCP)
+- CLI tool: qlik-cli (moet lokaal geïnstalleerd zijn)
+- Initiële functionaliteiten: qlik app build en qlik app unbuild
+- Entry point: main() functie die mcp.run() aanroept
+
+## Eerste implementatie focus
+In de eerste fase wordt alleen ondersteuning geboden voor:
+1. qlik app build - Apps bouwen met connections, script, dimensions, measures, etc.
+2. qlik app unbuild - Apps uitpakken naar separate bestanden (json, yaml, qvs)
+
+Beide commando's ondersteunen alle beschikbare flags en parameters zoals beschreven in de qlik-cli documentatie.
