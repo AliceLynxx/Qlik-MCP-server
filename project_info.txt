@@ -9,12 +9,23 @@ Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli vo
 - **DevOps Engineers**: Die Qlik deployment processen willen automatiseren
 - **MCP Client Gebruikers**: Die Qlik functionaliteiten willen gebruiken via hun MCP client
 
+## Qlik CLI Referentie
+**Zie `qlik_cli_reference.txt`** voor volledige documentatie van de qlik-cli zoals geïnstalleerd op het systeem. Dit bestand bevat:
+- Alle beschikbare commando's en subcommando's
+- Parameter specificaties en flags
+- Context management informatie
+- Voorbeelden en gebruik
+- Integratie richtlijnen
+
+Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie altijd gebaseerd is op de laatste opbouw van de geïnstalleerde qlik-cli.
+
 ## Huidige Functionaliteiten
 
 ### Basis Infrastructuur
 - **config.py**: Configuratie management voor Qlik CLI en MCP server instellingen
 - **requirements.txt**: Dependency management met FastMCP en andere benodigde packages
 - **README.md**: Uitgebreide documentatie voor installatie en gebruik
+- **qlik_cli_reference.txt**: Volledige qlik-cli referentie documentatie voor integratie
 
 ### Qlik CLI Integratie
 - **qlik_tools.py**: Kern module met QlikCLI klasse voor qlik-cli integratie
@@ -73,6 +84,7 @@ Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli vo
 - **Subprocess**: Interface naar qlik-cli executable
 - **Pydantic**: Type-safe configuratie en parameter management
 - **Logging**: Gestructureerde logging voor monitoring
+- **Qlik CLI Integration**: Gebaseerd op volledige qlik-cli referentie (zie qlik_cli_reference.txt)
 
 ## Gebruik
 De server kan gestart worden met:
@@ -89,4 +101,6 @@ MCP clients kunnen vervolgens verbinding maken en de volgende tools gebruiken:
 ## Volgende Stappen
 1. **Testing**: Unit tests en integratie tests
 2. **Documentatie**: Uitgebreide gebruikershandleiding
-3. **Uitbreiding**: Meer qlik-cli commando's (reload, item management, etc.)
+3. **Uitbreiding**: Meer qlik-cli commando's (reload, item management, etc.) - zie qlik_cli_reference.txt voor volledige lijst beschikbare commando's
+4. **Context Management**: Implementatie van qlik context commando's voor betere authenticatie
+5. **Advanced Features**: App analysis tools, connection management, en andere geavanceerde qlik-cli functionaliteiten
