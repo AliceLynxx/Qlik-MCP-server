@@ -62,19 +62,34 @@
   - Secure credential handling via qlik-cli
   - Bescherming tegen verwijdering van actieve context
 
-## Stap 5: App Discovery en Listing (must-have)
+## Stap 5: App Discovery en Listing (must-have) - ✅ VOLTOOID
 **Omschrijving**: Functionaliteiten om beschikbare apps op te vragen en te filteren
-**Doel**: Gebruikers moeten een overzicht kunnen krijgen van alle beschikbare apps in hun Qlik Cloud tenant. Dit is de basis voor alle app-gerelateerde operaties - je moet eerst weten welke apps er zijn voordat je ze kunt beheren.
-**Bestanden**: qlik_tools.py, app.py
-**Acties**:
-- app_list() functie met filtering opties
-- app_get() functie voor specifieke app details
-- Ondersteuning voor spaces en collections
-- MCP tools implementeren:
-  - `qlik_app_list`: Lijst van beschikbare apps met filters
-  - `qlik_app_get`: Details van specifieke app
-  - `qlik_app_search`: Zoeken in apps op naam/beschrijving
-  - `qlik_space_list`: Beschikbare spaces tonen
+**Status**: Volledig geïmplementeerd in feature/app-discovery branch
+**Resultaat**:
+- **QlikCLI klasse uitbreidingen** (qlik_tools.py):
+  - app_list(): Lijst van beschikbare apps met filtering op space_id, collection_id, owner, paginering (limit/offset)
+  - app_get(): Gedetailleerde informatie over specifieke app inclusief metadata, reload status, file size
+  - app_search(): Zoeken in apps op naam, beschrijving en tags met relevantie scoring en client-side filtering
+  - space_list(): Overzicht van beschikbare spaces met type filtering en app counts per space
+  - _parse_json_output(): Robuuste JSON parsing voor qlik-cli output met error handling
+- **MCP Tools implementatie** (app.py):
+  - qlik_app_list: Lijst van beschikbare apps met gebruiksvriendelijke filtering en paginering
+  - qlik_app_get: Gedetailleerde app informatie met gestructureerde output
+  - qlik_app_search: Zoeken in apps met relevantie scoring en match highlighting
+  - qlik_space_list: Overzicht van spaces met app counts en type informatie
+  - Pydantic models: QlikAppListParams, QlikAppGetParams, QlikAppSearchParams, QlikSpaceListParams
+- **Functionaliteiten**:
+  - Filtering op space, owner, collection met parameter validatie
+  - Paginering voor grote datasets (limit/offset ondersteuning)
+  - Client-side search met fuzzy matching en relevantie scoring
+  - Gestructureerde output met samenvatting informatie
+  - Performance optimalisatie voor grote app catalogi
+  - Error handling voor niet-bestaande apps en ongeldige parameters
+- **User Experience**:
+  - Gebruiksvriendelijke output formatting voor betere leesbaarheid
+  - Samenvatting informatie (totaal apps, spaces, owners)
+  - Match highlighting in zoekresultaten
+  - Duidelijke foutmeldingen en suggesties
 
 ## Stap 6: App Export en Import functionaliteiten (must-have)
 **Omschrijving**: Apps kunnen exporteren naar lokale bestanden en importeren vanuit bestanden
