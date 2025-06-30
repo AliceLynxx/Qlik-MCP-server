@@ -1,0 +1,229 @@
+# Qlik CLI Reference Documentation
+
+Deze documentatie bevat de volledige qlik-cli informatie zoals geïnstalleerd op het systeem. Deze informatie wordt gebruikt als referentie voor de integratie met de Qlik-MCP-server om ervoor te zorgen dat alle functionaliteiten correct worden geïmplementeerd.
+
+## Qlik CLI Overzicht
+
+qlik is a Command Line Interface for Qlik Cloud.
+
+It gives you access to all public APIs which enables you to administrate your tenant and apps,
+develop and manage apps, migrate data and much more.
+
+Sending quotes in the body requires a different syntax for some Windows terminals.
+Powershell: qlik ... --body '[{\"op\":\"replace\",\"path\":\"/name\",\"value\":\"abc\"}]'
+CMD.exe: qlik ... --body [{\"op\":\"replace\",\"path\":\"/name\",\"value\":\"abc\"}]
+
+## Main Usage
+```
+Usage:
+  qlik [flags]
+  qlik [command]
+```
+
+## Command Categories
+
+### Content Management Commands:
+- **app**: Manage, build, edit and analyze apps
+- **collection**: Manage collections of items
+- **data-file**: Upload and manage data-files for apps
+- **item**: Manage, list and find apps and other content resources
+- **space**: Manage spaces
+
+### App Data Reload Commands:
+- **reload**: Start and monitor reloads of apps
+- **reload-task**: Schedule periodic reload tasks for apps
+
+### Extension Management Commands:
+- **extension**: Manage extensions
+- **theme**: Manage themes
+
+### System Management Commands:
+- **api-key**: Manage API keys used for authorization
+- **audit**: View and manage audit events
+- **automation**: Manage automations
+- **automation-connection**: Manage automation-connections
+- **brand**: Manage the branding of a tenant (logos, favIcon and styling)
+- **consumption**: Manage tracking usage of various resource usage tracking events
+- **csp-origin**: Manage tenant-wide Content Security Policy
+- **glossary**: Manage glossaries - common and agreed upon (business) terms, typically focused on defining the meaning of data and described in terms that everyone understands
+- **group**: Manage groups
+- **identity-provider**: Manage identity providers
+- **license**: Licenses is the resource representing tenant and user entitlements
+- **lineage-graph**: Lineage-graphs represents the lineage information for a specific Qlik item.
+- **note**: Manage and configure notes
+- **oauth-client**: Create and manage OAuth clients
+- **oauth-token**: Manage OAuth tokens
+- **question**: Ask natural languages questions
+- **quota**: View quotas
+- **role**: Resource representing a role in the system
+- **tenant**: Manage, create and remove tenants
+- **transport**: Manage configuration for email and notification
+- **user**: Manage, create and remove users
+- **web-integration**: Manage whitelisted origins that can make requests to a specified tenant (CORS)
+- **webhook**: Manage and configure webhooks
+
+### Advanced API Commands:
+- **raw**: Send Http API Request to Qlik Cloud
+- **spec**: Handle inclusion of external specifications
+
+### Qlik Sense Enterprise on Windows Commands:
+- **qrs**: Qlik Sense Enterprise on Windows Repository Commands (Experimental)
+
+### Other Commands:
+- **alias**: Manage command aliases
+- **completion**: Generate auto completion scripts
+- **context**: Create, update and use contexts
+- **help**: Help about any command
+- **status**: Print status info about the connection to the engine and current app
+- **update**: Update qlik-cli to the latest released version
+- **version**: Print version info
+
+## Global Flags
+```
+Flags:
+  -c, --config string            path/to/config.yml where parameters can
+                                 be set instead of on the command line
+      --context string           Name of the context used when connecting
+                                 to Qlik Associative Engine
+      --headers stringToString   HTTP headers to use when connecting to
+                                 Qlik Associative Engine (default [])
+  -h, --help                     help for qlik
+      --insecure                 Enabling insecure will make it possible
+                                 to connect using self-signed certificates
+      --json                     Returns output in JSON format, if
+                                 possible. Disables verbose and traffic output
+  -s, --server string            URL to Qlik Cloud or directly to a Qlik
+                                 Associative Engine
+      --server-type string       The type of server you are using: cloud,
+                                 Windows (Enterprise on Windows) or engine
+  -v, --verbose                  Log extra information
+```
+
+## App Command Details
+
+Apps are collections of data items (measures, dimensions, and visualizations), sheets, and stories that let you and others make data discoveries and decisions
+
+```
+Usage:
+  qlik app [flags]
+  qlik app [command]
+```
+
+### App Management Commands:
+- **copy**: Copies a specific app.
+- **create**: Creates a new app.
+- **edit**: Edits the information for a specific app.
+- **evaluation**: Manage app evaluations
+- **export**: Exports a specific app.
+- **get**: Retrieves information for a specific app.
+- **import**: Imports an app into the system.
+- **insight-analyse**: Access Insight Advisors's analyses, business models and more
+- **ls**: Print a list of all available apps
+- **owner**: Changes owner of the app.
+- **privileges**: Gets the app privileges for the current user, such as create app and import app. Empty means that the current user has no app privileges.
+- **publish**: Publish or republish apps to managed spaces
+- **reload-metadata**: Retrieves the app reload metadata list. Reload metadata contains reload information, including reload id, duration, endtime and lineage load info.
+- **rm**: Deletes a specific app.
+- **script**: Manage the script of an app
+- **space**: Change which shared space an app is in
+- **update**: Updates the information for a specific app.
+
+### App Building Commands:
+- **build**: Reload and save the app after updating connections, dimensions, measures, objects and the script
+- **reload**: Do a reload interactively and print the logs
+- **unbuild**: Split up an existing app into separate json and yaml files
+
+### App Analysis Commands:
+- **assoc**: Print table associations
+- **data**: Retrieve meta-data about an app
+- **eval**: Evaluate a list of measures and dimensions
+- **fields**: Print field list
+- **keys**: Print key-only field list
+- **meta**: Print tables, fields and associations
+- **tables**: Print tables
+- **values**: Print the top values of a field
+
+### Advanced App Editing Commands:
+- **bookmark**: Manage and edit bookmarks in an app
+- **connection**: Manage and edit connections associated with an app
+- **dimension**: Manage and edit dimensions in an app
+- **measure**: Manage and edit measures in an app
+- **media**: Manage media files related to an app
+- **object**: Manage and edit generic objects
+- **state**: Manage and edit alternate states in an app
+- **variable**: Manage and edit variable objects in an app
+
+## Context Management
+
+Create, update and use contexts
+
+Contexts store connection information such as server url, certificates and headers,
+similar to a config. The main difference between contexts and configs is that they
+can be used globally. Use the context subcommands to configure contexts which
+facilitate app development in environments where certificates and headers are needed.
+
+The current context is the one that is being used. You can use "context get" to
+display the contents of the current context and switch context with "context use"
+or unset the current context with "context clear".
+
+Note that contexts have the lowest precedence. This means that e.g. an --server flag
+(or a server field in a config) will override the server url in the current context.
+
+Contexts are stored locally in your ~/.qlik/contexts.yml file.
+
+```
+Usage:
+  qlik context [flags]
+  qlik context [command]
+```
+
+### Available Context Commands:
+- **clear**: Set the current context to none
+- **create**: Create a context with the specified configuration
+- **get**: Get context, current context by default
+- **init**: Set up access to Qlik Cloud
+- **login**: Login and set cookie for the named context
+- **ls**: List all contexts
+- **rename**: Rename a context
+- **rm**: Remove one or more contexts
+- **update**: Update a context with the specified configuration
+- **use**: Specify what context to use
+
+### Context Create Examples:
+```bash
+qlik context create me@cloud --server https://my-tenant.eu.qlikcloud.com --api-key MY-API-KEY
+qlik context create local --server localhost:9076 --comment "Local engine"
+qlik context create me@qseow --server https://qseow.domain.com/jwt --comment "Qlik Sense Enterprise on Windows" --api-key MY-API-KEY --insecure
+```
+
+### Context Create Flags:
+```
+Flags:
+      --api-key string               API-key to be used for Qlik Cloud
+      --comment string               Comment for the context
+  -h, --help                         help for create
+      --oauth-client-id string       The ID of the configured OAuth
+                                     client, obtained from My Qlik
+                                     (https://account.myqlik.qlik.com/account)
+      --oauth-client-secret string   The secret of the configured OAuth
+                                     client, obtained from My Qlik
+                                     (https://account.myqlik.qlik.com/account)
+```
+
+### Context Remove Examples:
+```bash
+qlik context rm local-engine
+qlik context rm ctx1 ctx2
+```
+
+## Integration Notes
+
+Deze referentie documentatie dient als basis voor:
+
+1. **Parameter Validatie**: Alle parameters en flags die beschikbaar zijn in qlik-cli
+2. **Command Coverage**: Overzicht van alle beschikbare commando's voor toekomstige implementatie
+3. **Context Management**: Hoe contexts werken voor authenticatie en configuratie
+4. **Error Handling**: Begrip van qlik-cli gedrag voor betere error handling
+5. **Feature Planning**: Roadmap voor welke commando's als volgende geïmplementeerd kunnen worden
+
+Deze informatie wordt regelmatig bijgewerkt wanneer qlik-cli wordt geüpdatet om compatibiliteit te behouden.
