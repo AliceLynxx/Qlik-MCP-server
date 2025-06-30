@@ -1,14 +1,15 @@
 # Project Info - Qlik-MCP-server
 
 ## Overzicht
-Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli voor het beheren van Qlik Cloud applicaties. Deze server stelt MCP clients in staat om Qlik apps te bouwen, uit te pakken en te beheren via een gestandaardiseerde interface. Ondersteunt zowel directe authenticatie als context-gebaseerde multi-tenant authenticatie.
+Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli voor het beheren van Qlik Cloud applicaties. Deze server stelt MCP clients in staat om Qlik apps te ontdekken, te zoeken, te bouwen, uit te pakken en te beheren via een gestandaardiseerde interface. Ondersteunt zowel directe authenticatie als context-gebaseerde multi-tenant authenticatie.
 
 ## Doelgroep
 - **Ontwikkelaars**: Die Qlik apps willen integreren in hun development workflow
-- **Data Analisten**: Die programmatisch Qlik apps willen beheren
+- **Data Analisten**: Die programmatisch Qlik apps willen beheren en ontdekken
 - **DevOps Engineers**: Die Qlik deployment processen willen automatiseren
 - **MCP Client Gebruikers**: Die Qlik functionaliteiten willen gebruiken via hun MCP client
 - **Multi-tenant Organisaties**: Die meerdere Qlik Cloud tenants willen beheren
+- **Content Managers**: Die overzicht willen over hun Qlik app portfolio
 
 ## Qlik CLI Referentie
 **Zie `qlik_cli_reference.txt`** voor volledige documentatie van de qlik-cli zoals geïnstalleerd op het systeem. Dit bestand bevat:
@@ -34,8 +35,14 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 ### Qlik CLI Integratie
 - **qlik_tools.py**: Kern module met QlikCLI klasse voor qlik-cli integratie
   - **QlikCLI klasse**: Python interface naar qlik-cli commando's
-  - **app_build()**: Volledige ondersteuning voor qlik app build met alle parameters
-  - **app_unbuild()**: Ondersteuning voor qlik app unbuild functionaliteit
+  - **App Management**:
+    - **app_build()**: Volledige ondersteuning voor qlik app build met alle parameters
+    - **app_unbuild()**: Ondersteuning voor qlik app unbuild functionaliteit
+  - **App Discovery**: Nieuwe functionaliteiten voor app ontdekking en beheer
+    - **app_list()**: Lijst van beschikbare apps met filtering op space, owner, paginering
+    - **app_get()**: Gedetailleerde informatie over specifieke app inclusief metadata
+    - **app_search()**: Zoeken in apps op naam, beschrijving en tags met relevantie scoring
+    - **space_list()**: Overzicht van beschikbare spaces met app counts en type informatie
   - **Context Management**: Volledige ondersteuning voor qlik context operaties
     - **context_create()**: Nieuwe context aanmaken met API key validatie
     - **context_list()**: Alle beschikbare contexts tonen met huidige actieve context
@@ -43,6 +50,7 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
     - **context_remove()**: Veilig verwijderen van contexts (niet actieve context)
     - **context_current()**: Informatie over huidige actieve context
     - **validate_api_key()**: API key validatie tegen Qlik Cloud tenant
+  - **JSON Parsing**: Robuuste JSON parsing voor qlik-cli output met error handling
   - **Security Features**: 
     - Tenant URL validatie voor Qlik Cloud domains
     - API key masking in logs voor veiligheid
@@ -53,7 +61,12 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 
 ### FastMCP Server Implementatie
 - **app.py**: Hoofdbestand met werkende FastMCP server
-  - **MCP Tools**: Acht geregistreerde tools beschikbaar voor clients
+  - **MCP Tools**: Twaalf geregistreerde tools beschikbaar voor clients
+    - **App Discovery**:
+      - `qlik_app_list`: Lijst van beschikbare apps met filtering en paginering
+      - `qlik_app_get`: Gedetailleerde informatie over specifieke app
+      - `qlik_app_search`: Zoeken in apps op naam, beschrijving en tags
+      - `qlik_space_list`: Overzicht van beschikbare spaces met app counts
     - **App Management**:
       - `qlik_app_build`: Bouw Qlik apps met alle qlik-cli parameters
       - `qlik_app_unbuild`: Export Qlik apps naar component bestanden
@@ -66,9 +79,19 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
       - `qlik_cli_version`: Verkrijg qlik-cli versie informatie
       - `qlik_validate_connection`: Test verbinding met Qlik Cloud
   - **Pydantic Models**: Type-safe parameter validatie voor alle tools
-    - QlikContextCreateParams: Context aanmaak parameters
-    - QlikContextUseParams: Context switching parameters
-    - QlikContextRemoveParams: Context verwijdering parameters
+    - **App Discovery Models**:
+      - QlikAppListParams: Parameters voor app listing met filtering
+      - QlikAppGetParams: Parameters voor specifieke app details
+      - QlikAppSearchParams: Parameters voor app zoeken met filters
+      - QlikSpaceListParams: Parameters voor space listing met type filtering
+    - **App Management Models**:
+      - QlikAppBuildParams: App build parameters
+      - QlikAppUnbuildParams: App unbuild parameters
+    - **Context Management Models**:
+      - QlikContextCreateParams: Context aanmaak parameters
+      - QlikContextUseParams: Context switching parameters
+      - QlikContextRemoveParams: Context verwijdering parameters
+  - **User-friendly Output**: Geformatteerde output voor betere leesbaarheid
   - **Error Handling**: Comprehensive foutafhandeling met duidelijke error messages
   - **Logging**: Gestructureerde logging naar console en bestand
   - **Server Management**: Proper startup, shutdown en configuratie validatie
@@ -81,6 +104,14 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 - **Parameter Validation**: Pydantic models voor type-safe parameter handling
 - **Async Support**: Volledige ondersteuning voor asynchrone operaties
 - **Configuration Integration**: Naadloze integratie met config.py instellingen
+
+### App Discovery & Search Functionaliteiten
+- **App Listing**: Paginering, filtering op space/owner, sorteer opties
+- **App Details**: Volledige metadata inclusief reload status, file size, permissions
+- **Search Capabilities**: Fuzzy matching, relevantie scoring, multi-field search
+- **Space Management**: Type filtering (personal/shared/managed), app counts
+- **Performance Optimization**: Efficiënte handling van grote app catalogi
+- **Client-side Filtering**: Geavanceerde zoek- en filtermogelijkheden
 
 ### Context Management & Authentication
 - **Multi-tenant Support**: Beheer van meerdere Qlik Cloud tenants via contexts
@@ -111,6 +142,7 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 - Sensitive data masking in logs
 - Log files voor debugging en monitoring
 - Configureerbare log levels
+- JSON parsing error handling
 
 ## Architectuur
 - **MCP Protocol**: Standaard Model Context Protocol implementatie
@@ -120,6 +152,7 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 - **Logging**: Gestructureerde logging voor monitoring
 - **Qlik CLI Integration**: Gebaseerd op volledige qlik-cli referentie (zie qlik_cli_reference.txt)
 - **Context Management**: Integratie met qlik-cli context systeem voor multi-tenant ondersteuning
+- **JSON Processing**: Robuuste parsing van qlik-cli JSON output
 
 ## Gebruik
 
@@ -128,6 +161,27 @@ De server kan gestart worden met:
 ```bash
 python app.py
 ```
+
+### App Discovery Workflow
+1. **Apps ontdekken**:
+   ```
+   qlik_app_list(limit=20, space_id="space-123")
+   ```
+
+2. **Apps zoeken**:
+   ```
+   qlik_app_search(query="sales", limit=10, owner="john.doe")
+   ```
+
+3. **App details bekijken**:
+   ```
+   qlik_app_get(app_identifier="MyApp")
+   ```
+
+4. **Spaces verkennen**:
+   ```
+   qlik_space_list(type_filter="shared")
+   ```
 
 ### Context Management Workflow
 1. **Context aanmaken**:
@@ -153,6 +207,12 @@ python app.py
 ### Beschikbare MCP Tools
 MCP clients kunnen verbinding maken en de volgende tools gebruiken:
 
+**App Discovery:**
+- `qlik_app_list`: Voor het ontdekken van beschikbare apps met filtering
+- `qlik_app_get`: Voor gedetailleerde informatie over specifieke apps
+- `qlik_app_search`: Voor het zoeken in apps op naam, beschrijving en tags
+- `qlik_space_list`: Voor overzicht van beschikbare spaces
+
 **App Management:**
 - `qlik_app_build`: Voor het bouwen van Qlik applicaties
 - `qlik_app_unbuild`: Voor het exporteren van Qlik applicaties
@@ -168,9 +228,9 @@ MCP clients kunnen verbinding maken en de volgende tools gebruiken:
 - `qlik_validate_connection`: Voor connectie validatie
 
 ## Volgende Stappen
-1. **App Discovery**: App listing en search functionaliteiten
-2. **App Export/Import**: Apps downloaden en uploaden
-3. **Reload Management**: App reload triggering en monitoring
+1. **App Export/Import**: Apps downloaden en uploaden functionaliteiten
+2. **Reload Management**: App reload triggering en monitoring
+3. **Content Management**: Advanced space en collection management
 4. **Testing**: Unit tests en integratie tests
 5. **Documentatie**: Uitgebreide gebruikershandleiding
 6. **Advanced Features**: App analysis tools, connection management, en andere geavanceerde qlik-cli functionaliteiten
