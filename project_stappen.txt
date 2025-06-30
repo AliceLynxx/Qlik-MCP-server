@@ -31,22 +31,123 @@
 - Server startup met configuratie validatie
 - Integratie met bestaande qlik_tools.QlikCLI klasse
 
-## Stap 4: Testing en documentatie (nice-to-have)
+## Stap 4: Context Management en API-key ondersteuning (must-have)
+**Omschrijving**: Implementatie van qlik context management voor authenticatie
+**Doel**: Gebruikers moeten hun API-key kunnen configureren en contexts kunnen beheren voor toegang tot Qlik Cloud. Dit is essentieel voor alle verdere functionaliteiten omdat zonder authenticatie geen apps kunnen worden opgevraagd of beheerd.
+**Bestanden**: qlik_tools.py, app.py, config.py
+**Acties**:
+- Context create/update/delete functionaliteiten
+- API-key configuratie en validatie
+- Context switching voor verschillende tenants
+- Secure storage van credentials
+- MCP tools voor context management:
+  - `qlik_context_create`: Nieuwe context aanmaken met API-key
+  - `qlik_context_list`: Beschikbare contexts tonen
+  - `qlik_context_use`: Context activeren
+  - `qlik_context_remove`: Context verwijderen
+
+## Stap 5: App Discovery en Listing (must-have)
+**Omschrijving**: Functionaliteiten om beschikbare apps op te vragen en te filteren
+**Doel**: Gebruikers moeten een overzicht kunnen krijgen van alle beschikbare apps in hun Qlik Cloud tenant. Dit is de basis voor alle app-gerelateerde operaties - je moet eerst weten welke apps er zijn voordat je ze kunt beheren.
+**Bestanden**: qlik_tools.py, app.py
+**Acties**:
+- app_list() functie met filtering opties
+- app_get() functie voor specifieke app details
+- Ondersteuning voor spaces en collections
+- MCP tools implementeren:
+  - `qlik_app_list`: Lijst van beschikbare apps met filters
+  - `qlik_app_get`: Details van specifieke app
+  - `qlik_app_search`: Zoeken in apps op naam/beschrijving
+  - `qlik_space_list`: Beschikbare spaces tonen
+
+## Stap 6: App Export en Import functionaliteiten (must-have)
+**Omschrijving**: Apps kunnen exporteren naar lokale bestanden en importeren vanuit bestanden
+**Doel**: Gebruikers moeten apps kunnen downloaden voor backup, migratie of lokale bewerking, en apps kunnen uploaden naar hun tenant. Dit is cruciaal voor app lifecycle management en deployment workflows.
+**Bestanden**: qlik_tools.py, app.py
+**Acties**:
+- app_export() functie met verschillende formaten
+- app_import() functie met validatie
+- Bestandsbeheer en cleanup
+- MCP tools implementeren:
+  - `qlik_app_export`: App exporteren naar bestand
+  - `qlik_app_import`: App importeren vanuit bestand
+  - `qlik_app_copy`: App kopiëren binnen tenant
+  - `qlik_app_publish`: App publiceren naar managed space
+
+## Stap 7: App Reload Management (must-have)
+**Omschrijving**: Apps kunnen reloaden en reload status monitoren
+**Doel**: Data in apps moet up-to-date gehouden kunnen worden door reloads te triggeren en te monitoren. Dit is essentieel voor productie omgevingen waar data regelmatig wordt bijgewerkt.
+**Bestanden**: qlik_tools.py, app.py
+**Acties**:
+- app_reload() functie met monitoring
+- reload_task management
+- Status tracking en logging
+- MCP tools implementeren:
+  - `qlik_app_reload`: App reload starten
+  - `qlik_reload_status`: Reload status opvragen
+  - `qlik_reload_task_list`: Geplande reload tasks tonen
+  - `qlik_reload_task_create`: Nieuwe reload task aanmaken
+
+## Stap 8: Content Management (nice-to-have)
+**Omschrijving**: Beheer van spaces, collections en items
+**Doel**: Gebruikers moeten de organisatiestructuur van hun Qlik content kunnen beheren. Spaces en collections helpen bij het organiseren van apps en andere content, wat belangrijk is voor grotere organisaties.
+**Bestanden**: qlik_tools.py, app.py
+**Acties**:
+- Space management functionaliteiten
+- Collection management
+- Item management en metadata
+- MCP tools implementeren:
+  - `qlik_space_create`: Nieuwe space aanmaken
+  - `qlik_space_update`: Space eigenschappen wijzigen
+  - `qlik_collection_list`: Collections tonen
+  - `qlik_item_move`: Items verplaatsen tussen spaces
+
+## Stap 9: Data File Management (nice-to-have)
+**Omschrijving**: Upload en beheer van data files voor apps
+**Doel**: Gebruikers moeten data bestanden kunnen uploaden die door apps gebruikt worden. Dit ondersteunt self-service analytics waarbij gebruikers hun eigen data kunnen uploaden.
+**Bestanden**: qlik_tools.py, app.py
+**Acties**:
+- Data file upload functionaliteiten
+- File management en cleanup
+- Connection management
+- MCP tools implementeren:
+  - `qlik_data_file_upload`: Data bestand uploaden
+  - `qlik_data_file_list`: Beschikbare data files tonen
+  - `qlik_data_file_delete`: Data bestand verwijderen
+  - `qlik_connection_list`: Beschikbare connecties tonen
+
+## Stap 10: Advanced Analytics en Insights (nice-to-have)
+**Omschrijving**: Toegang tot Qlik's analytics en insight functionaliteiten
+**Doel**: Gebruikers moeten gebruik kunnen maken van Qlik's AI-powered analytics zoals Insight Advisor. Dit biedt toegevoegde waarde door automatische analyses en suggesties.
+**Bestanden**: qlik_tools.py, app.py
+**Acties**:
+- Insight Advisor integratie
+- Natural language query ondersteuning
+- Analytics en evaluatie tools
+- MCP tools implementeren:
+  - `qlik_insight_analyze`: Automatische analyse van data
+  - `qlik_question_ask`: Natural language vragen stellen
+  - `qlik_app_evaluate`: App evaluatie uitvoeren
+  - `qlik_lineage_graph`: Data lineage informatie
+
+## Stap 11: Testing en documentatie (nice-to-have)
 **Omschrijving**: Unit tests en uitgebreide documentatie
 **Doel**: Zorgen voor betrouwbaarheid en gebruiksgemak. Tests geven vertrouwen in de stabiliteit, documentatie helpt gebruikers om snel aan de slag te gaan. Dit verhoogt de adoptie en vermindert support vragen.
 **Bestanden**: tests/, docs/, examples/
 **Acties**:
-- Unit tests voor qlik_tools module
+- Unit tests voor alle qlik_tools functies
 - Integratie tests voor MCP server
 - Gebruikershandleiding en API documentatie
-- Voorbeelden van gebruik
+- Voorbeelden van gebruik voor alle functionaliteiten
+- Performance tests voor grote datasets
 
-## Stap 5: Uitbreiding met meer Qlik commando's (nice-to-have)
-**Omschrijving**: Ondersteuning voor meer qlik-cli commando's zoals reload, item management, etc.
-**Doel**: De server uitbreiden met meer Qlik functionaliteiten om een completere oplossing te bieden. Dit vergroot de waarde voor gebruikers die meer dan alleen app build/unbuild nodig hebben.
-**Bestanden**: qlik_tools.py, app.py
+## Stap 12: Security en Monitoring (nice-to-have)
+**Omschrijving**: Beveiligingsmaatregelen en monitoring functionaliteiten
+**Doel**: Voor productie gebruik moeten er adequate beveiligingsmaatregelen zijn en moet de server gemonitord kunnen worden. Dit is belangrijk voor enterprise deployments.
+**Bestanden**: security.py, monitoring.py, app.py
 **Acties**:
-- Implementatie van reload commando's
-- Item management functionaliteiten
-- Space en collection management
-- Uitbreiding van MCP tools
+- Credential encryption en secure storage
+- Audit logging van alle operaties
+- Rate limiting en throttling
+- Health checks en metrics
+- Error alerting en notification
