@@ -1,0 +1,25 @@
+2025-06-30 14:29:52,518 - __main__ - ERROR - Failed to initialize QlikCLI: qlik-cli not found at path: qlik
+2025-06-30 14:35:18,941 - __main__ - ERROR - Failed to initialize QlikCLI: qlik-cli not found at path: C:\Program Files\Qlik-cli
+2025-06-30 14:35:33,929 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 3
+2025-06-30 14:35:33,946 - __main__ - ERROR - Failed to initialize QlikCLI: qlik-cli not found at path: qlik
+2025-06-30 14:38:18,972 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 3
+2025-06-30 14:40:22,958 - __main__ - ERROR - Failed to initialize QlikCLI: qlik-cli not found at path: C:\Program Files\Qlik-cli\qlik.exe
+2025-06-30 14:42:23,336 - __main__ - ERROR - Failed to initialize QlikCLI: qlik-cli not found at path: C:\Program Files\Qlik-cli\qlik
+2025-06-30 14:43:46,559 - __main__ - INFO - QlikCLI initialized successfully
+2025-06-30 14:43:46,573 - __main__ - INFO - Starting qlik-mcp-server v1.0.0
+2025-06-30 14:43:46,573 - __main__ - INFO - Debug mode: False
+2025-06-30 14:43:46,574 - __main__ - INFO - Log level: INFO
+2025-06-30 14:43:46,655 - __main__ - ERROR - Qlik CLI setup validation failed. Please check your qlik-cli installation and configuration.
+2025-06-30 14:44:42,967 - __main__ - INFO - QlikCLI initialized successfully
+2025-06-30 14:44:42,980 - __main__ - INFO - Starting qlik-mcp-server v1.0.0
+2025-06-30 14:44:42,980 - __main__ - INFO - Debug mode: False
+2025-06-30 14:44:42,982 - __main__ - INFO - Log level: INFO
+2025-06-30 14:44:43,062 - __main__ - INFO - Qlik CLI setup validation passed
+2025-06-30 14:44:43,062 - __main__ - INFO - Available MCP tools:
+2025-06-30 14:44:43,062 - __main__ - INFO -   - qlik_app_build: Build Qlik applications from components
+2025-06-30 14:44:43,062 - __main__ - INFO -   - qlik_app_unbuild: Export Qlik applications to components
+2025-06-30 14:44:43,063 - __main__ - INFO -   - qlik_cli_version: Get qlik-cli version information
+2025-06-30 14:44:43,063 - __main__ - INFO -   - qlik_validate_connection: Validate connection to Qlik Cloud
+2025-06-30 14:44:43,063 - __main__ - INFO - Starting MCP server...
+2025-06-30 14:45:05,488 - __main__ - INFO - Server shutdown requested by user
+2025-06-30 14:45:05,842 - __main__ - INFO - MCP server stopped

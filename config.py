@@ -102,7 +102,7 @@ class Config(BaseModel):
         try:
             # Test if qlik-cli is accessible
             result = subprocess.run(
-                [self.qlik.cli_path, '--version'],
+                [self.qlik.cli_path, 'version'],
                 capture_output=True,
                 text=True,
                 timeout=10

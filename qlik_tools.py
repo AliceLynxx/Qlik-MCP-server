@@ -50,7 +50,7 @@ class QlikCLI:
         """Check if qlik-cli is available and working"""
         try:
             result = subprocess.run(
-                [self.cli_path, '--version'],
+                [self.cli_path, 'version'],
                 capture_output=True,
                 text=True,
                 timeout=10
