@@ -635,6 +635,351 @@ class QlikCLI:
             logger.error(error_msg)
             raise QlikCLIError(error_msg)
     
+    def app_copy(self,
+                 source_app_id: str,
+                 target_name: str,
+                 target_space_id: Optional[str] = None,
+                 include_data: bool = True,
+                 copy_permissions: bool = False) -> Dict[str, Any]:
+        """
+        Copy existing Qlik application within the same tenant
+        
+        Args:
+            source_app_id: Source app ID to copy from
+            target_name: Name for the copied app
+            target_space_id: Target space ID (optional, uses source app space if not provided)
+            include_data: Whether to include data in the copy (default: True)
+            copy_permissions: Whether to copy permissions (default: False)
+            
+        Returns:
+            Dictionary containing copy result and new app information
+            
+        Raises:
+            QlikCLIError: If copy fails or parameters are invalid
+        """
+        logger.info(f"Copying Qlik app '{source_app_id}' to new app '{target_name}'")
+        
+        # Validate parameters
+        if not source_app_id or not source_app_id.strip():
+            raise QlikCLIError("Source app ID cannot be empty")
+        
+        if not target_name or not target_name.strip():
+            raise QlikCLIError("Target app name cannot be empty")
+        
+        # Validate source app exists and get details
+        try:
+            source_app_details = self.app_get(source_app_id)
+            if not source_app_details['success']:
+                raise QlikCLIError(f"Source app '{source_app_id}' not found or not accessible")
+            
+            source_app = source_app_details['app']
+            logger.info(f"Source app found: '{source_app['name']}' in space '{source_app['space']['name']}'")
+            
+        except QlikCLIError as e:
+            raise QlikCLIError(f"Cannot validate source app: {str(e)}")
+        
+        # Use source app space if target space not specified
+        if not target_space_id:
+            target_space_id = source_app['space']['id']
+            logger.info(f"Using source app space as target: {target_space_id}")
+        
+        # Validate target space if specified
+        if target_space_id:
+            try:
+                spaces_result = self.space_list()
+                available_spaces = [space['id'] for space in spaces_result['spaces']]
+                if target_space_id not in available_spaces:
+                    raise QlikCLIError(f"Target space '{target_space_id}' not found or not accessible")
+            except QlikCLIError as e:
+                raise QlikCLIError(f"Cannot validate target space: {str(e)}")
+        
+        # Check for existing app with same name in target space
+        try:
+            search_result = self.app_search(target_name, limit=10)
+            existing_apps = [app for app in search_result['apps'] 
+                           if app['name'].lower() == target_name.lower()]
+            
+            if existing_apps and target_space_id:
+                existing_apps = [app for app in existing_apps if app['space_id'] == target_space_id]
+            
+            if existing_apps:
+                raise QlikCLIError(f"App with name '{target_name}' already exists in target space")
+        
+        except QlikCLIError as e:
+            if "already exists" in str(e):
+                raise e
+            # If search fails for other reasons, continue with copy
+            logger.warning(f"Could not check for existing apps: {str(e)}")
+        
+        # Build copy command
+        cmd = self._build_base_command()
+        cmd.extend(['app', 'copy'])
+        
+        # Add source app ID
+        cmd.extend(['--app', source_app_id])
+        
+        # Add target name
+        cmd.extend(['--name', target_name])
+        
+        # Add target space if specified
+        if target_space_id:
+            cmd.extend(['--space', target_space_id])
+        
+        # Add data option
+        if not include_data:
+            cmd.append('--no-data')
+        
+        # Add permissions option (if supported by qlik-cli)
+        if copy_permissions:
+            cmd.append('--copy-permissions')
+        
+        # Track start time for duration calculation
+        start_time = time.time()
+        
+        try:
+            # Execute copy command
+            result = self._execute_command(cmd)
+            
+            # Calculate duration
+            duration = time.time() - start_time
+            
+            # Try to get the new app ID from output
+            new_app_id = None
+            if result['stdout']:
+                # Look for app ID in output (format may vary)
+                copy_output = result['stdout']
+                # Try to extract app ID using common patterns
+                id_patterns = [
+                    r'App ID:\s*([a-f0-9-]+)',
+                    r'Copied to:\s*([a-f0-9-]+)',
+                    r'app\s+([a-f0-9-]+)\s+created',
+                    r'"id":\s*"([a-f0-9-]+)"'
+                ]
+                
+                for pattern in id_patterns:
+                    match = re.search(pattern, copy_output, re.IGNORECASE)
+                    if match:
+                        new_app_id = match.group(1)
+                        break
+            
+            # Verify copy by searching for the app
+            verification_result = None
+            if new_app_id:
+                try:
+                    verification_result = self.app_get(new_app_id)
+                except Exception:
+                    logger.warning(f"Could not verify copied app with ID: {new_app_id}")
+            else:
+                # Try to find by name in target space
+                try:
+                    search_result = self.app_search(target_name, limit=5)
+                    matching_apps = [app for app in search_result['apps'] 
+                                   if app['name'] == target_name and app['space_id'] == target_space_id]
+                    if matching_apps:
+                        new_app_id = matching_apps[0]['id']
+                        verification_result = self.app_get(new_app_id)
+                except Exception:
+                    logger.warning(f"Could not verify copied app by name: {target_name}")
+            
+            logger.info(f"Successfully copied app '{source_app_id}' to '{target_name}' (ID: {new_app_id}, {duration:.2f}s)")
+            
+            return {
+                'success': True,
+                'source_app_id': source_app_id,
+                'source_app_name': source_app['name'],
+                'target_name': target_name,
+                'new_app_id': new_app_id,
+                'target_space_id': target_space_id,
+                'include_data': include_data,
+                'copy_permissions': copy_permissions,
+                'copy_duration_seconds': round(duration, 2),
+                'verification_result': verification_result,
+                'command_result': result
+            }
+            
+        except QlikCLIError as e:
+            error_msg = f"Failed to copy app '{source_app_id}': {str(e)}"
+            logger.error(error_msg)
+            raise QlikCLIError(error_msg)
+        
+        except Exception as e:
+            error_msg = f"Unexpected error during app copy: {str(e)}"
+            logger.error(error_msg)
+            raise QlikCLIError(error_msg)
+    
+    def app_publish(self,
+                    app_id: str,
+                    target_space_id: str,
+                    publish_name: Optional[str] = None,
+                    replace_existing: bool = False) -> Dict[str, Any]:
+        """
+        Publish Qlik application to managed space for broader access
+        
+        Args:
+            app_id: App ID to publish
+            target_space_id: Managed space ID to publish to
+            publish_name: Name for published app (optional, uses original name if not provided)
+            replace_existing: Whether to replace existing published app
+            
+        Returns:
+            Dictionary containing publication result and published app information
+            
+        Raises:
+            QlikCLIError: If publication fails or parameters are invalid
+        """
+        logger.info(f"Publishing Qlik app '{app_id}' to managed space '{target_space_id}'")
+        
+        # Validate parameters
+        if not app_id or not app_id.strip():
+            raise QlikCLIError("App ID cannot be empty")
+        
+        if not target_space_id or not target_space_id.strip():
+            raise QlikCLIError("Target space ID cannot be empty")
+        
+        # Validate source app exists and get details
+        try:
+            source_app_details = self.app_get(app_id)
+            if not source_app_details['success']:
+                raise QlikCLIError(f"App '{app_id}' not found or not accessible")
+            
+            source_app = source_app_details['app']
+            logger.info(f"Source app found: '{source_app['name']}' in space '{source_app['space']['name']}'")
+            
+        except QlikCLIError as e:
+            raise QlikCLIError(f"Cannot validate source app: {str(e)}")
+        
+        # Use source app name if publish name not specified
+        if not publish_name:
+            publish_name = source_app['name']
+            logger.info(f"Using source app name for publication: {publish_name}")
+        
+        # Validate target space exists and is managed
+        try:
+            spaces_result = self.space_list()
+            target_space = None
+            for space in spaces_result['spaces']:
+                if space['id'] == target_space_id:
+                    target_space = space
+                    break
+            
+            if not target_space:
+                raise QlikCLIError(f"Target space '{target_space_id}' not found")
+            
+            if target_space['type'].lower() != 'managed':
+                logger.warning(f"Target space '{target_space['name']}' is not a managed space (type: {target_space['type']})")
+            
+        except QlikCLIError as e:
+            raise QlikCLIError(f"Cannot validate target space: {str(e)}")
+        
+        # Check for existing published app with same name if not replacing
+        if not replace_existing:
+            try:
+                search_result = self.app_search(publish_name, limit=10)
+                existing_apps = [app for app in search_result['apps'] 
+                               if app['name'].lower() == publish_name.lower() and 
+                                  app['space_id'] == target_space_id]
+                
+                if existing_apps:
+                    raise QlikCLIError(f"App with name '{publish_name}' already exists in target space. Use replace_existing=True to overwrite.")
+            
+            except QlikCLIError as e:
+                if "already exists" in str(e):
+                    raise e
+                # If search fails for other reasons, continue with publication
+                logger.warning(f"Could not check for existing published apps: {str(e)}")
+        
+        # Build publish command
+        cmd = self._build_base_command()
+        cmd.extend(['app', 'publish'])
+        
+        # Add app ID
+        cmd.extend(['--app', app_id])
+        
+        # Add target space
+        cmd.extend(['--space', target_space_id])
+        
+        # Add publish name if different from original
+        if publish_name != source_app['name']:
+            cmd.extend(['--name', publish_name])
+        
+        # Add replace flag if specified
+        if replace_existing:
+            cmd.append('--replace')
+        
+        # Track start time for duration calculation
+        start_time = time.time()
+        
+        try:
+            # Execute publish command
+            result = self._execute_command(cmd)
+            
+            # Calculate duration
+            duration = time.time() - start_time
+            
+            # Try to get the published app ID from output
+            published_app_id = None
+            if result['stdout']:
+                # Look for app ID in output (format may vary)
+                publish_output = result['stdout']
+                # Try to extract app ID using common patterns
+                id_patterns = [
+                    r'Published app ID:\s*([a-f0-9-]+)',
+                    r'Published to:\s*([a-f0-9-]+)',
+                    r'app\s+([a-f0-9-]+)\s+published',
+                    r'"id":\s*"([a-f0-9-]+)"'
+                ]
+                
+                for pattern in id_patterns:
+                    match = re.search(pattern, publish_output, re.IGNORECASE)
+                    if match:
+                        published_app_id = match.group(1)
+                        break
+            
+            # Verify publication by searching for the app in target space
+            verification_result = None
+            if published_app_id:
+                try:
+                    verification_result = self.app_get(published_app_id)
+                except Exception:
+                    logger.warning(f"Could not verify published app with ID: {published_app_id}")
+            else:
+                # Try to find by name in target space
+                try:
+                    search_result = self.app_search(publish_name, limit=5)
+                    matching_apps = [app for app in search_result['apps'] 
+                                   if app['name'] == publish_name and app['space_id'] == target_space_id]
+                    if matching_apps:
+                        published_app_id = matching_apps[0]['id']
+                        verification_result = self.app_get(published_app_id)
+                except Exception:
+                    logger.warning(f"Could not verify published app by name: {publish_name}")
+            
+            logger.info(f"Successfully published app '{app_id}' to space '{target_space_id}' (Published ID: {published_app_id}, {duration:.2f}s)")
+            
+            return {
+                'success': True,
+                'source_app_id': app_id,
+                'source_app_name': source_app['name'],
+                'published_app_id': published_app_id,
+                'publish_name': publish_name,
+                'target_space_id': target_space_id,
+                'target_space_name': target_space['name'],
+                'replaced_existing': replace_existing,
+                'publish_duration_seconds': round(duration, 2),
+                'verification_result': verification_result,
+                'command_result': result
+            }
+            
+        except QlikCLIError as e:
+            error_msg = f"Failed to publish app '{app_id}': {str(e)}"
+            logger.error(error_msg)
+            raise QlikCLIError(error_msg)
+        
+        except Exception as e:
+            error_msg = f"Unexpected error during app publication: {str(e)}"
+            logger.error(error_msg)
+            raise QlikCLIError(error_msg)
+    
     # App Discovery Methods
     
     def app_list(self, 
