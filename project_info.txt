@@ -1,13 +1,14 @@
 # Project Info - Qlik-MCP-server
 
 ## Overzicht
-Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli voor het beheren van Qlik Cloud applicaties. Deze server stelt MCP clients in staat om Qlik apps te bouwen, uit te pakken en te beheren via een gestandaardiseerde interface.
+Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli voor het beheren van Qlik Cloud applicaties. Deze server stelt MCP clients in staat om Qlik apps te bouwen, uit te pakken en te beheren via een gestandaardiseerde interface. Ondersteunt zowel directe authenticatie als context-gebaseerde multi-tenant authenticatie.
 
 ## Doelgroep
 - **Ontwikkelaars**: Die Qlik apps willen integreren in hun development workflow
 - **Data Analisten**: Die programmatisch Qlik apps willen beheren
 - **DevOps Engineers**: Die Qlik deployment processen willen automatiseren
 - **MCP Client Gebruikers**: Die Qlik functionaliteiten willen gebruiken via hun MCP client
+- **Multi-tenant Organisaties**: Die meerdere Qlik Cloud tenants willen beheren
 
 ## Qlik CLI Referentie
 **Zie `qlik_cli_reference.txt`** voor volledige documentatie van de qlik-cli zoals geïnstalleerd op het systeem. Dit bestand bevat:
@@ -23,6 +24,9 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 
 ### Basis Infrastructuur
 - **config.py**: Configuratie management voor Qlik CLI en MCP server instellingen
+  - **Multi-context ondersteuning**: Context-gebaseerde authenticatie voor multi-tenant omgevingen
+  - **Legacy ondersteuning**: Directe API key authenticatie voor eenvoudige setups
+  - **Context directory management**: Configureerbare opslag locatie voor context bestanden
 - **requirements.txt**: Dependency management met FastMCP en andere benodigde packages
 - **README.md**: Uitgebreide documentatie voor installatie en gebruik
 - **qlik_cli_reference.txt**: Volledige qlik-cli referentie documentatie voor integratie
@@ -32,18 +36,39 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
   - **QlikCLI klasse**: Python interface naar qlik-cli commando's
   - **app_build()**: Volledige ondersteuning voor qlik app build met alle parameters
   - **app_unbuild()**: Ondersteuning voor qlik app unbuild functionaliteit
+  - **Context Management**: Volledige ondersteuning voor qlik context operaties
+    - **context_create()**: Nieuwe context aanmaken met API key validatie
+    - **context_list()**: Alle beschikbare contexts tonen met huidige actieve context
+    - **context_use()**: Wisselen tussen verschillende contexts
+    - **context_remove()**: Veilig verwijderen van contexts (niet actieve context)
+    - **context_current()**: Informatie over huidige actieve context
+    - **validate_api_key()**: API key validatie tegen Qlik Cloud tenant
+  - **Security Features**: 
+    - Tenant URL validatie voor Qlik Cloud domains
+    - API key masking in logs voor veiligheid
+    - Secure credential handling
   - **Error handling**: Robuuste foutafhandeling en parameter validatie
   - **Logging**: Uitgebreide logging voor debugging en monitoring
   - **Timeout handling**: Configureerbare timeouts voor langlopende operaties
 
 ### FastMCP Server Implementatie
 - **app.py**: Hoofdbestand met werkende FastMCP server
-  - **MCP Tools**: Vier geregistreerde tools beschikbaar voor clients
-    - `qlik_app_build`: Bouw Qlik apps met alle qlik-cli parameters
-    - `qlik_app_unbuild`: Export Qlik apps naar component bestanden
-    - `qlik_cli_version`: Verkrijg qlik-cli versie informatie
-    - `qlik_validate_connection`: Test verbinding met Qlik Cloud
+  - **MCP Tools**: Acht geregistreerde tools beschikbaar voor clients
+    - **App Management**:
+      - `qlik_app_build`: Bouw Qlik apps met alle qlik-cli parameters
+      - `qlik_app_unbuild`: Export Qlik apps naar component bestanden
+    - **Context Management**:
+      - `qlik_context_create`: Nieuwe authenticatie context aanmaken
+      - `qlik_context_list`: Alle beschikbare contexts tonen
+      - `qlik_context_use`: Wisselen naar specifieke context
+      - `qlik_context_remove`: Authenticatie context verwijderen
+    - **Utilities**:
+      - `qlik_cli_version`: Verkrijg qlik-cli versie informatie
+      - `qlik_validate_connection`: Test verbinding met Qlik Cloud
   - **Pydantic Models**: Type-safe parameter validatie voor alle tools
+    - QlikContextCreateParams: Context aanmaak parameters
+    - QlikContextUseParams: Context switching parameters
+    - QlikContextRemoveParams: Context verwijdering parameters
   - **Error Handling**: Comprehensive foutafhandeling met duidelijke error messages
   - **Logging**: Gestructureerde logging naar console en bestand
   - **Server Management**: Proper startup, shutdown en configuratie validatie
@@ -56,6 +81,14 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 - **Parameter Validation**: Pydantic models voor type-safe parameter handling
 - **Async Support**: Volledige ondersteuning voor asynchrone operaties
 - **Configuration Integration**: Naadloze integratie met config.py instellingen
+
+### Context Management & Authentication
+- **Multi-tenant Support**: Beheer van meerdere Qlik Cloud tenants via contexts
+- **Secure Credential Storage**: API keys worden veilig opgeslagen via qlik-cli
+- **Context Switching**: Eenvoudig wisselen tussen verschillende omgevingen
+- **API Key Validation**: Validatie van credentials voordat context wordt aangemaakt
+- **Tenant URL Validation**: Controle op geldige Qlik Cloud domain patterns
+- **Active Context Protection**: Voorkomt verwijdering van actieve context
 
 ### Qlik App Build Ondersteuning
 - Basis parameters: app identifier
@@ -75,6 +108,7 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 - Qlik CLI error parsing en doorsturen
 - Parameter validatie vooraf
 - Uitgebreide logging van alle operaties
+- Sensitive data masking in logs
 - Log files voor debugging en monitoring
 - Configureerbare log levels
 
@@ -85,22 +119,58 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 - **Pydantic**: Type-safe configuratie en parameter management
 - **Logging**: Gestructureerde logging voor monitoring
 - **Qlik CLI Integration**: Gebaseerd op volledige qlik-cli referentie (zie qlik_cli_reference.txt)
+- **Context Management**: Integratie met qlik-cli context systeem voor multi-tenant ondersteuning
 
 ## Gebruik
+
+### Server Starten
 De server kan gestart worden met:
 ```bash
 python app.py
 ```
 
-MCP clients kunnen vervolgens verbinding maken en de volgende tools gebruiken:
+### Context Management Workflow
+1. **Context aanmaken**:
+   ```
+   qlik_context_create(name="prod", tenant_url="https://your-tenant.qlikcloud.com", api_key="your-api-key")
+   ```
+
+2. **Contexts bekijken**:
+   ```
+   qlik_context_list()
+   ```
+
+3. **Context activeren**:
+   ```
+   qlik_context_use(name="prod")
+   ```
+
+4. **Apps beheren** (gebruikt actieve context):
+   ```
+   qlik_app_build(app="MyApp", script="script.qvs")
+   ```
+
+### Beschikbare MCP Tools
+MCP clients kunnen verbinding maken en de volgende tools gebruiken:
+
+**App Management:**
 - `qlik_app_build`: Voor het bouwen van Qlik applicaties
 - `qlik_app_unbuild`: Voor het exporteren van Qlik applicaties
+
+**Context Management:**
+- `qlik_context_create`: Nieuwe authenticatie context aanmaken
+- `qlik_context_list`: Beschikbare contexts tonen
+- `qlik_context_use`: Context activeren
+- `qlik_context_remove`: Context verwijderen
+
+**Utilities:**
 - `qlik_cli_version`: Voor versie informatie
 - `qlik_validate_connection`: Voor connectie validatie
 
 ## Volgende Stappen
-1. **Testing**: Unit tests en integratie tests
-2. **Documentatie**: Uitgebreide gebruikershandleiding
-3. **Uitbreiding**: Meer qlik-cli commando's (reload, item management, etc.) - zie qlik_cli_reference.txt voor volledige lijst beschikbare commando's
-4. **Context Management**: Implementatie van qlik context commando's voor betere authenticatie
-5. **Advanced Features**: App analysis tools, connection management, en andere geavanceerde qlik-cli functionaliteiten
+1. **App Discovery**: App listing en search functionaliteiten
+2. **App Export/Import**: Apps downloaden en uploaden
+3. **Reload Management**: App reload triggering en monitoring
+4. **Testing**: Unit tests en integratie tests
+5. **Documentatie**: Uitgebreide gebruikershandleiding
+6. **Advanced Features**: App analysis tools, connection management, en andere geavanceerde qlik-cli functionaliteiten

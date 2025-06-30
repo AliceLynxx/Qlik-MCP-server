@@ -3,10 +3,12 @@ Configuration module for Qlik-MCP-server
 
 This module provides configuration settings and environment management
 for the MCP server that interfaces with Qlik Cloud via qlik-cli.
+Supports both direct authentication and context-based multi-tenant authentication.
 """
 
 import os
 from typing import Optional
+from pathlib import Path
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -23,16 +25,27 @@ class QlikConfig(BaseModel):
         description="Path to qlik-cli executable"
     )
     
-    # Qlik Cloud connection settings
+    # Qlik Cloud connection settings (legacy/direct mode)
     tenant_url: Optional[str] = Field(
         default=None,
-        description="Qlik Cloud tenant URL"
+        description="Qlik Cloud tenant URL (used when not using contexts)"
     )
     
-    # Authentication settings
+    # Authentication settings (legacy/direct mode)
     api_key: Optional[str] = Field(
         default=None,
-        description="Qlik Cloud API key for authentication"
+        description="Qlik Cloud API key for authentication (used when not using contexts)"
+    )
+    
+    # Context management settings
+    context_support: bool = Field(
+        default=True,
+        description="Enable context-based authentication for multi-tenant support"
+    )
+    
+    context_directory: Optional[str] = Field(
+        default=None,
+        description="Directory for storing context configurations (defaults to qlik-cli default)"
     )
     
     # Timeout settings
@@ -40,6 +53,28 @@ class QlikConfig(BaseModel):
         default=300,
         description="Timeout for qlik-cli commands in seconds"
     )
+    
+    def validate_context_directory(self) -> bool:
+        """
+        Validate that context directory exists and is accessible
+        
+        Returns:
+            True if directory is valid or None (using default), False otherwise
+        """
+        if not self.context_directory:
+            # Using qlik-cli default directory, assume it's valid
+            return True
+        
+        try:
+            context_path = Path(self.context_directory)
+            if context_path.exists():
+                return context_path.is_dir() and os.access(context_path, os.R_OK | os.W_OK)
+            else:
+                # Check if parent directory exists and is writable
+                parent = context_path.parent
+                return parent.exists() and parent.is_dir() and os.access(parent, os.W_OK)
+        except (OSError, ValueError):
+            return False
 
 
 class ServerConfig(BaseModel):
@@ -83,6 +118,8 @@ class Config(BaseModel):
             cli_path=os.getenv('QLIK_CLI_PATH', 'qlik'),
             tenant_url=os.getenv('QLIK_TENANT_URL'),
             api_key=os.getenv('QLIK_API_KEY'),
+            context_support=os.getenv('QLIK_CONTEXT_SUPPORT', 'true').lower() == 'true',
+            context_directory=os.getenv('QLIK_CONTEXT_DIRECTORY'),
             command_timeout=int(os.getenv('QLIK_COMMAND_TIMEOUT', '300'))
         )
         
@@ -107,9 +144,42 @@ class Config(BaseModel):
                 text=True,
                 timeout=10
             )
-            return result.returncode == 0
+            
+            if result.returncode != 0:
+                return False
+            
+            # If context support is enabled, validate context directory
+            if self.qlik.context_support:
+                return self.qlik.validate_context_directory()
+            
+            return True
+            
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return False
+    
+    def get_authentication_mode(self) -> str:
+        """
+        Determine the authentication mode based on configuration
+        
+        Returns:
+            'context' if using context-based authentication,
+            'direct' if using direct API key authentication,
+            'none' if no authentication is configured
+        """
+        if self.qlik.context_support:
+            return 'context'
+        elif self.qlik.tenant_url and self.qlik.api_key:
+            return 'direct'
+        else:
+            return 'none'
+    
+    def is_context_mode(self) -> bool:
+        """Check if context-based authentication is enabled"""
+        return self.qlik.context_support
+    
+    def is_direct_mode(self) -> bool:
+        """Check if direct authentication is configured"""
+        return not self.qlik.context_support and bool(self.qlik.tenant_url and self.qlik.api_key)
 
 
 # Global configuration instance

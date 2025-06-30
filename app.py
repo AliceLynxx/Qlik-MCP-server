@@ -4,7 +4,8 @@ Qlik MCP Server
 
 FastMCP server implementation that provides Qlik Cloud functionality
 through MCP (Model Context Protocol) tools. This server allows MCP clients
-to build and unbuild Qlik applications using the qlik-cli.
+to build and unbuild Qlik applications using the qlik-cli, and manage
+authentication contexts for multi-tenant environments.
 """
 
 import logging
@@ -48,6 +49,7 @@ except QlikCLIError as e:
 
 
 # Pydantic models for MCP tool parameters
+
 class QlikAppBuildParams(BaseModel):
     """Parameters for qlik app build command"""
     app: str = Field(description="Name or identifier of the app")
@@ -72,6 +74,25 @@ class QlikAppUnbuildParams(BaseModel):
     dir: Optional[str] = Field(None, description="Path to the folder where the unbuilt app is exported")
     no_data: bool = Field(False, description="Open app without data")
 
+
+class QlikContextCreateParams(BaseModel):
+    """Parameters for creating a new Qlik context"""
+    name: str = Field(description="Name for the new context")
+    tenant_url: str = Field(description="Qlik Cloud tenant URL (e.g., https://your-tenant.qlikcloud.com)")
+    api_key: str = Field(description="API key for authentication with Qlik Cloud")
+
+
+class QlikContextUseParams(BaseModel):
+    """Parameters for switching to a Qlik context"""
+    name: str = Field(description="Name of the context to activate")
+
+
+class QlikContextRemoveParams(BaseModel):
+    """Parameters for removing a Qlik context"""
+    name: str = Field(description="Name of the context to remove")
+
+
+# App Build/Unbuild Tools
 
 @mcp.tool()
 def qlik_app_build(params: QlikAppBuildParams) -> Dict[str, Any]:
@@ -172,6 +193,186 @@ def qlik_app_unbuild(params: QlikAppUnbuildParams) -> Dict[str, Any]:
         raise Exception(error_msg)
 
 
+# Context Management Tools
+
+@mcp.tool()
+def qlik_context_create(params: QlikContextCreateParams) -> Dict[str, Any]:
+    """
+    Create a new Qlik context for authentication
+    
+    This tool creates a new authentication context for Qlik Cloud, allowing users
+    to securely store and manage API keys for different tenants or environments.
+    The API key is validated against the tenant before the context is created.
+    
+    Args:
+        params: QlikContextCreateParams containing context name, tenant URL, and API key
+        
+    Returns:
+        Dictionary containing the context creation result
+        
+    Raises:
+        Exception: If context creation fails or API key validation fails
+    """
+    logger.info(f"Creating Qlik context: {params.name}")
+    
+    try:
+        # Execute the context creation
+        result = qlik_cli.context_create(params.name, params.tenant_url, params.api_key)
+        
+        logger.info(f"Successfully created Qlik context: {params.name}")
+        
+        return {
+            "success": True,
+            "message": f"Successfully created Qlik context '{params.name}' for tenant {params.tenant_url}",
+            "context_name": params.name,
+            "tenant_url": params.tenant_url,
+            "command_result": result
+        }
+        
+    except QlikCLIError as e:
+        error_msg = f"Failed to create Qlik context '{params.name}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    
+    except Exception as e:
+        error_msg = f"Unexpected error creating Qlik context '{params.name}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+
+
+@mcp.tool()
+def qlik_context_list() -> Dict[str, Any]:
+    """
+    List all available Qlik contexts
+    
+    This tool retrieves and displays all configured Qlik contexts, showing
+    which context is currently active. This helps users understand their
+    available authentication configurations and switch between them as needed.
+    
+    Returns:
+        Dictionary containing the list of contexts and current active context
+        
+    Raises:
+        Exception: If listing contexts fails
+    """
+    logger.info("Listing Qlik contexts")
+    
+    try:
+        # Execute the context listing
+        result = qlik_cli.context_list()
+        
+        logger.info(f"Successfully listed Qlik contexts: {len(result['contexts'])} found")
+        
+        return {
+            "success": True,
+            "message": f"Found {len(result['contexts'])} Qlik contexts",
+            "contexts": result['contexts'],
+            "current_context": result['current_context'],
+            "command_result": result
+        }
+        
+    except QlikCLIError as e:
+        error_msg = f"Failed to list Qlik contexts: {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    
+    except Exception as e:
+        error_msg = f"Unexpected error listing Qlik contexts: {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+
+
+@mcp.tool()
+def qlik_context_use(params: QlikContextUseParams) -> Dict[str, Any]:
+    """
+    Switch to a specific Qlik context
+    
+    This tool activates a specific authentication context, making it the default
+    for all subsequent Qlik operations. This allows users to easily switch between
+    different tenants or environments without reconfiguring authentication.
+    
+    Args:
+        params: QlikContextUseParams containing the context name to activate
+        
+    Returns:
+        Dictionary containing the context switching result
+        
+    Raises:
+        Exception: If context switching fails or context doesn't exist
+    """
+    logger.info(f"Switching to Qlik context: {params.name}")
+    
+    try:
+        # Execute the context switch
+        result = qlik_cli.context_use(params.name)
+        
+        logger.info(f"Successfully switched to Qlik context: {params.name}")
+        
+        return {
+            "success": True,
+            "message": f"Successfully switched to Qlik context '{params.name}'",
+            "active_context": params.name,
+            "command_result": result
+        }
+        
+    except QlikCLIError as e:
+        error_msg = f"Failed to switch to Qlik context '{params.name}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    
+    except Exception as e:
+        error_msg = f"Unexpected error switching to Qlik context '{params.name}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+
+
+@mcp.tool()
+def qlik_context_remove(params: QlikContextRemoveParams) -> Dict[str, Any]:
+    """
+    Remove a Qlik context
+    
+    This tool permanently removes an authentication context and its associated
+    credentials. The currently active context cannot be removed - users must
+    switch to another context first. This provides a secure way to clean up
+    unused or outdated authentication configurations.
+    
+    Args:
+        params: QlikContextRemoveParams containing the context name to remove
+        
+    Returns:
+        Dictionary containing the context removal result
+        
+    Raises:
+        Exception: If context removal fails or context is currently active
+    """
+    logger.info(f"Removing Qlik context: {params.name}")
+    
+    try:
+        # Execute the context removal
+        result = qlik_cli.context_remove(params.name)
+        
+        logger.info(f"Successfully removed Qlik context: {params.name}")
+        
+        return {
+            "success": True,
+            "message": f"Successfully removed Qlik context '{params.name}'",
+            "removed_context": params.name,
+            "command_result": result
+        }
+        
+    except QlikCLIError as e:
+        error_msg = f"Failed to remove Qlik context '{params.name}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    
+    except Exception as e:
+        error_msg = f"Unexpected error removing Qlik context '{params.name}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+
+
+# Utility Tools
+
 @mcp.tool()
 def qlik_cli_version() -> Dict[str, Any]:
     """
@@ -255,10 +456,17 @@ def main():
     
     # Log available tools
     logger.info("Available MCP tools:")
-    logger.info("  - qlik_app_build: Build Qlik applications from components")
-    logger.info("  - qlik_app_unbuild: Export Qlik applications to components")
-    logger.info("  - qlik_cli_version: Get qlik-cli version information")
-    logger.info("  - qlik_validate_connection: Validate connection to Qlik Cloud")
+    logger.info("  App Management:")
+    logger.info("    - qlik_app_build: Build Qlik applications from components")
+    logger.info("    - qlik_app_unbuild: Export Qlik applications to components")
+    logger.info("  Context Management:")
+    logger.info("    - qlik_context_create: Create new authentication context")
+    logger.info("    - qlik_context_list: List all available contexts")
+    logger.info("    - qlik_context_use: Switch to a specific context")
+    logger.info("    - qlik_context_remove: Remove an authentication context")
+    logger.info("  Utilities:")
+    logger.info("    - qlik_cli_version: Get qlik-cli version information")
+    logger.info("    - qlik_validate_connection: Validate connection to Qlik Cloud")
     
     try:
         # Start the MCP server
