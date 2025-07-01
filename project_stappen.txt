@@ -91,19 +91,76 @@
   - Match highlighting in zoekresultaten
   - Duidelijke foutmeldingen en suggesties
 
-## Stap 6: App Export en Import functionaliteiten (must-have)
+## Stap 6: App Export en Import functionaliteiten (must-have) - ✅ VOLTOOID
 **Omschrijving**: Apps kunnen exporteren naar lokale bestanden en importeren vanuit bestanden
-**Doel**: Gebruikers moeten apps kunnen downloaden voor backup, migratie of lokale bewerking, en apps kunnen uploaden naar hun tenant. Dit is cruciaal voor app lifecycle management en deployment workflows.
-**Bestanden**: qlik_tools.py, app.py
-**Acties**:
-- app_export() functie met verschillende formaten
-- app_import() functie met validatie
-- Bestandsbeheer en cleanup
-- MCP tools implementeren:
-  - `qlik_app_export`: App exporteren naar bestand
-  - `qlik_app_import`: App importeren vanuit bestand
-  - `qlik_app_copy`: App kopiëren binnen tenant
-  - `qlik_app_publish`: App publiceren naar managed space
+**Status**: Volledig geïmplementeerd in feature/app-export-import branch
+**Resultaat**:
+- **QlikCLI klasse uitbreidingen** (qlik_tools.py):
+  - **app_export()**: Export apps naar verschillende formaten (QVF, JSON, XLSX)
+    - Ondersteuning voor export met/zonder data
+    - Progress monitoring voor grote exports
+    - Disk space validatie en cleanup
+    - Bestandsintegriteit verificatie
+    - Export format validatie
+    - App validatie vooraf
+  - **app_import()**: Import apps vanuit lokale bestanden
+    - Pre-import validatie en bestandscontrole (grootte, format, integriteit)
+    - Conflict detectie en naam resolutie
+    - Post-import verificatie
+    - Space targeting en permissions check
+    - Replace existing app optie
+  - **app_copy()**: Kopieer apps binnen dezelfde tenant
+    - Cross-space copying ondersteuning
+    - Data en permissions kopieer opties
+    - Naam uniciteit validatie
+    - Source app validatie en target space verificatie
+  - **app_publish()**: Publiceer apps naar managed spaces
+    - Managed space validatie
+    - Publication permissions verificatie
+    - Existing publication conflict handling
+    - Publication status tracking en verificatie
+  - **Validation & Security**:
+    - File path validatie tegen directory traversal attacks
+    - Export format validatie (QVF, JSON, XLSX)
+    - Space permissions verificatie
+    - Disk space checks voor exports
+    - Comprehensive error handling en cleanup
+- **MCP Tools implementatie** (app.py):
+  - **qlik_app_export**: Export apps naar lokale bestanden voor backup/migratie
+    - Ondersteuning voor QVF, JSON, XLSX formaten
+    - Data inclusion/exclusion opties
+    - Progress feedback en file size informatie
+    - Recommendations voor gebruik
+  - **qlik_app_import**: Import apps vanuit lokale bestanden naar tenant
+    - QVF bestand import met validatie
+    - Space targeting en conflict handling
+    - Post-import verificatie en next steps
+  - **qlik_app_copy**: Kopieer bestaande apps binnen dezelfde tenant
+    - Cross-space copying met data/permissions opties
+    - Source/target validatie
+    - Copy verification en recommendations
+  - **qlik_app_publish**: Publiceer apps naar managed spaces
+    - Managed space targeting
+    - Publication conflict resolution
+    - Publication verification en next steps
+  - **Pydantic models**: QlikAppExportParams, QlikAppImportParams, QlikAppCopyParams, QlikAppPublishParams
+- **Functionaliteiten**:
+  - **Complete App Lifecycle Management**: Export, Import, Copy, Publish workflows
+  - **Multiple Export Formats**: QVF (native), JSON (metadata), XLSX (data export)
+  - **Data Handling Options**: Include/exclude data, metadata-only exports
+  - **Space Management**: Cross-space operations, managed space publishing
+  - **Conflict Resolution**: Name conflicts, existing app replacement
+  - **Validation & Security**: Pre/post operation validation, secure file handling
+  - **Progress Monitoring**: Duration tracking, file size reporting
+  - **Error Recovery**: Cleanup on failure, comprehensive error messages
+- **Use Cases Supported**:
+  - **Backup & Recovery**: Apps veilig opslaan buiten de cloud omgeving
+  - **DevOps Workflows**: Apps verplaatsen tussen development, test en productie
+  - **Collaboration**: Apps delen tussen teams en organisaties
+  - **Version Control**: Apps integreren in git workflows
+  - **Migration**: Apps verplaatsen naar nieuwe tenants of cloud regio's
+  - **Template Creation**: Apps kopiëren zonder data als templates
+  - **Publication Management**: Apps promoten naar managed spaces
 
 ## Stap 7: App Reload Management (must-have)
 **Omschrijving**: Apps kunnen reloaden en reload status monitoren

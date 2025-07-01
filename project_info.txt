@@ -1,7 +1,7 @@
 # Project Info - Qlik-MCP-server
 
 ## Overzicht
-Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli voor het beheren van Qlik Cloud applicaties. Deze server stelt MCP clients in staat om Qlik apps te ontdekken, te zoeken, te bouwen, uit te pakken en te beheren via een gestandaardiseerde interface. Ondersteunt zowel directe authenticatie als context-gebaseerde multi-tenant authenticatie.
+Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli voor het beheren van Qlik Cloud applicaties. Deze server stelt MCP clients in staat om Qlik apps te ontdekken, te zoeken, te bouwen, uit te pakken, te exporteren, importeren, kopiëren, publiceren en te beheren via een gestandaardiseerde interface. Ondersteunt zowel directe authenticatie als context-gebaseerde multi-tenant authenticatie met volledige app lifecycle management.
 
 ## Doelgroep
 - **Ontwikkelaars**: Die Qlik apps willen integreren in hun development workflow
@@ -10,6 +10,8 @@ Een Model Context Protocol (MCP) server die een interface biedt naar qlik-cli vo
 - **MCP Client Gebruikers**: Die Qlik functionaliteiten willen gebruiken via hun MCP client
 - **Multi-tenant Organisaties**: Die meerdere Qlik Cloud tenants willen beheren
 - **Content Managers**: Die overzicht willen over hun Qlik app portfolio
+- **Migration Specialists**: Die apps willen migreren tussen omgevingen
+- **Backup Administrators**: Die apps willen exporteren voor backup doeleinden
 
 ## Qlik CLI Referentie
 **Zie `qlik_cli_reference.txt`** voor volledige documentatie van de qlik-cli zoals geïnstalleerd op het systeem. Dit bestand bevat:
@@ -38,7 +40,28 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
   - **App Management**:
     - **app_build()**: Volledige ondersteuning voor qlik app build met alle parameters
     - **app_unbuild()**: Ondersteuning voor qlik app unbuild functionaliteit
-  - **App Discovery**: Nieuwe functionaliteiten voor app ontdekking en beheer
+  - **App Lifecycle Management**: Nieuwe functionaliteiten voor complete app lifecycle
+    - **app_export()**: Export apps naar verschillende formaten (QVF, JSON, XLSX)
+      - Ondersteuning voor export met/zonder data
+      - Progress monitoring voor grote exports
+      - Disk space validatie en cleanup
+      - Bestandsintegriteit verificatie
+    - **app_import()**: Import apps vanuit lokale bestanden
+      - Pre-import validatie en bestandscontrole
+      - Conflict detectie en resolutie
+      - Post-import verificatie
+      - Space targeting en naam management
+    - **app_copy()**: Kopieer apps binnen dezelfde tenant
+      - Cross-space copying ondersteuning
+      - Data en permissions kopieer opties
+      - Naam uniciteit validatie
+      - Source app validatie
+    - **app_publish()**: Publiceer apps naar managed spaces
+      - Managed space validatie
+      - Publication permissions check
+      - Conflict resolutie voor bestaande publicaties
+      - Publication status tracking
+  - **App Discovery**: Functionaliteiten voor app ontdekking en beheer
     - **app_list()**: Lijst van beschikbare apps met filtering op space, owner, paginering
     - **app_get()**: Gedetailleerde informatie over specifieke app inclusief metadata
     - **app_search()**: Zoeken in apps op naam, beschrijving en tags met relevantie scoring
@@ -50,18 +73,26 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
     - **context_remove()**: Veilig verwijderen van contexts (niet actieve context)
     - **context_current()**: Informatie over huidige actieve context
     - **validate_api_key()**: API key validatie tegen Qlik Cloud tenant
-  - **JSON Parsing**: Robuuste JSON parsing voor qlik-cli output met error handling
-  - **Security Features**: 
+  - **Validation & Security Features**:
     - Tenant URL validatie voor Qlik Cloud domains
     - API key masking in logs voor veiligheid
     - Secure credential handling
+    - File path validatie tegen directory traversal attacks
+    - Export format validatie
+    - Space permissions verificatie
+  - **JSON Parsing**: Robuuste JSON parsing voor qlik-cli output met error handling
   - **Error handling**: Robuuste foutafhandeling en parameter validatie
   - **Logging**: Uitgebreide logging voor debugging en monitoring
   - **Timeout handling**: Configureerbare timeouts voor langlopende operaties
 
 ### FastMCP Server Implementatie
 - **app.py**: Hoofdbestand met werkende FastMCP server
-  - **MCP Tools**: Twaalf geregistreerde tools beschikbaar voor clients
+  - **MCP Tools**: Zestien geregistreerde tools beschikbaar voor clients
+    - **App Lifecycle Management**:
+      - `qlik_app_export`: Export apps naar lokale bestanden voor backup/migratie
+      - `qlik_app_import`: Import apps vanuit lokale bestanden naar tenant
+      - `qlik_app_copy`: Kopieer bestaande apps binnen dezelfde tenant
+      - `qlik_app_publish`: Publiceer apps naar managed spaces
     - **App Discovery**:
       - `qlik_app_list`: Lijst van beschikbare apps met filtering en paginering
       - `qlik_app_get`: Gedetailleerde informatie over specifieke app
@@ -79,6 +110,11 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
       - `qlik_cli_version`: Verkrijg qlik-cli versie informatie
       - `qlik_validate_connection`: Test verbinding met Qlik Cloud
   - **Pydantic Models**: Type-safe parameter validatie voor alle tools
+    - **App Lifecycle Models**:
+      - QlikAppExportParams: Parameters voor app export met format en data opties
+      - QlikAppImportParams: Parameters voor app import met validatie en space targeting
+      - QlikAppCopyParams: Parameters voor app kopiëren met data en permissions opties
+      - QlikAppPublishParams: Parameters voor app publicatie naar managed spaces
     - **App Discovery Models**:
       - QlikAppListParams: Parameters voor app listing met filtering
       - QlikAppGetParams: Parameters voor specifieke app details
@@ -104,6 +140,31 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 - **Parameter Validation**: Pydantic models voor type-safe parameter handling
 - **Async Support**: Volledige ondersteuning voor asynchrone operaties
 - **Configuration Integration**: Naadloze integratie met config.py instellingen
+
+### App Lifecycle Management Functionaliteiten
+- **Export Capabilities**:
+  - Multiple format support: QVF, JSON, XLSX
+  - Data inclusion options: with data, without data, metadata only
+  - Progress monitoring voor grote bestanden
+  - Disk space validatie en cleanup
+  - File integrity verificatie
+- **Import Capabilities**:
+  - QVF bestand import met validatie
+  - Pre-import bestandscontrole (grootte, format, integriteit)
+  - Conflict detectie en naam resolutie
+  - Space targeting en permissions check
+  - Post-import verificatie
+- **Copy Operations**:
+  - Cross-space copying binnen dezelfde tenant
+  - Data inclusion/exclusion opties
+  - Permissions copying ondersteuning
+  - Source app validatie en target space verificatie
+  - Naam uniciteit controle
+- **Publication Management**:
+  - Managed space targeting en validatie
+  - Publication permissions verificatie
+  - Existing publication conflict handling
+  - Publication status tracking en verificatie
 
 ### App Discovery & Search Functionaliteiten
 - **App Listing**: Paginering, filtering op space/owner, sorteer opties
@@ -162,6 +223,57 @@ De server kan gestart worden met:
 python app.py
 ```
 
+### App Lifecycle Management Workflows
+
+#### App Export Workflow
+1. **App exporteren voor backup**:
+   ```
+   qlik_app_export(app_identifier="MyApp", output_path="/backup/MyApp.qvf", format="qvf", include_data=true)
+   ```
+
+2. **App exporteren zonder data**:
+   ```
+   qlik_app_export(app_identifier="MyApp", output_path="/templates/MyApp_template.qvf", no_data=true)
+   ```
+
+3. **App exporteren naar JSON**:
+   ```
+   qlik_app_export(app_identifier="MyApp", output_path="/exports/MyApp.json", format="json")
+   ```
+
+#### App Import Workflow
+1. **App importeren vanuit backup**:
+   ```
+   qlik_app_import(file_path="/backup/MyApp.qvf", app_name="MyApp_Restored", space_id="space-123")
+   ```
+
+2. **App importeren met conflict handling**:
+   ```
+   qlik_app_import(file_path="/templates/Template.qvf", app_name="NewApp", replace_existing=true)
+   ```
+
+#### App Copy Workflow
+1. **App kopiëren naar andere space**:
+   ```
+   qlik_app_copy(source_app_id="app-123", target_name="MyApp_Copy", target_space_id="space-456", include_data=true)
+   ```
+
+2. **Template maken zonder data**:
+   ```
+   qlik_app_copy(source_app_id="app-123", target_name="MyApp_Template", include_data=false)
+   ```
+
+#### App Publish Workflow
+1. **App publiceren naar managed space**:
+   ```
+   qlik_app_publish(app_id="app-123", target_space_id="managed-space-789", publish_name="Production App")
+   ```
+
+2. **Bestaande publicatie vervangen**:
+   ```
+   qlik_app_publish(app_id="app-123", target_space_id="managed-space-789", replace_existing=true)
+   ```
+
 ### App Discovery Workflow
 1. **Apps ontdekken**:
    ```
@@ -207,6 +319,12 @@ python app.py
 ### Beschikbare MCP Tools
 MCP clients kunnen verbinding maken en de volgende tools gebruiken:
 
+**App Lifecycle Management:**
+- `qlik_app_export`: Voor het exporteren van apps naar lokale bestanden
+- `qlik_app_import`: Voor het importeren van apps vanuit lokale bestanden
+- `qlik_app_copy`: Voor het kopiëren van apps binnen dezelfde tenant
+- `qlik_app_publish`: Voor het publiceren van apps naar managed spaces
+
 **App Discovery:**
 - `qlik_app_list`: Voor het ontdekken van beschikbare apps met filtering
 - `qlik_app_get`: Voor gedetailleerde informatie over specifieke apps
@@ -228,9 +346,11 @@ MCP clients kunnen verbinding maken en de volgende tools gebruiken:
 - `qlik_validate_connection`: Voor connectie validatie
 
 ## Volgende Stappen
-1. **App Export/Import**: Apps downloaden en uploaden functionaliteiten
-2. **Reload Management**: App reload triggering en monitoring
-3. **Content Management**: Advanced space en collection management
+1. **Reload Management**: App reload triggering en monitoring
+2. **Content Management**: Advanced space en collection management
+3. **Connection Management**: Data connection beheer en validatie
 4. **Testing**: Unit tests en integratie tests
 5. **Documentatie**: Uitgebreide gebruikershandleiding
-6. **Advanced Features**: App analysis tools, connection management, en andere geavanceerde qlik-cli functionaliteiten
+6. **Advanced Features**: App analysis tools, performance monitoring, en andere geavanceerde qlik-cli functionaliteiten
+7. **Batch Operations**: Bulk export/import/copy operaties voor efficiency
+8. **Scheduling**: Automated backup en sync workflows

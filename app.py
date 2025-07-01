@@ -5,8 +5,9 @@ Qlik MCP Server
 FastMCP server implementation that provides Qlik Cloud functionality
 through MCP (Model Context Protocol) tools. This server allows MCP clients
 to build and unbuild Qlik applications using the qlik-cli, discover and list
-applications, search through app catalogs, manage spaces, and handle
-authentication contexts for multi-tenant environments.
+applications, search through app catalogs, manage spaces, handle
+authentication contexts for multi-tenant environments, and perform
+app lifecycle operations like export, import, copy, and publish.
 """
 
 import logging
@@ -76,6 +77,41 @@ class QlikAppUnbuildParams(BaseModel):
     no_data: bool = Field(False, description="Open app without data")
 
 
+class QlikAppExportParams(BaseModel):
+    """Parameters for exporting Qlik applications"""
+    app_identifier: str = Field(description="App ID or name to export")
+    output_path: str = Field(description="Path where exported file will be saved")
+    format: str = Field(default="qvf", description="Export format: 'qvf', 'json', or 'xlsx'")
+    include_data: bool = Field(default=True, description="Whether to include data in export")
+    no_data: bool = Field(default=False, description="Export without data (only metadata/script)")
+
+
+class QlikAppImportParams(BaseModel):
+    """Parameters for importing Qlik applications"""
+    file_path: str = Field(description="Path to import file (QVF format)")
+    app_name: Optional[str] = Field(None, description="Name for new app (optional, will use file name if not provided)")
+    space_id: Optional[str] = Field(None, description="Target space for import (optional, uses personal space if not provided)")
+    replace_existing: bool = Field(default=False, description="Whether to replace existing app with same name")
+    validate_before_import: bool = Field(default=True, description="Whether to validate file before import")
+
+
+class QlikAppCopyParams(BaseModel):
+    """Parameters for copying Qlik applications"""
+    source_app_id: str = Field(description="Source app ID to copy from")
+    target_name: str = Field(description="Name for the copied app")
+    target_space_id: Optional[str] = Field(None, description="Target space ID (optional, uses source app space if not provided)")
+    include_data: bool = Field(default=True, description="Whether to include data in the copy")
+    copy_permissions: bool = Field(default=False, description="Whether to copy permissions")
+
+
+class QlikAppPublishParams(BaseModel):
+    """Parameters for publishing Qlik applications"""
+    app_id: str = Field(description="App ID to publish")
+    target_space_id: str = Field(description="Managed space ID to publish to")
+    publish_name: Optional[str] = Field(None, description="Name for published app (optional, uses original name if not provided)")
+    replace_existing: bool = Field(default=False, description="Whether to replace existing published app")
+
+
 class QlikAppListParams(BaseModel):
     """Parameters for listing Qlik applications"""
     space_id: Optional[str] = Field(None, description="Filter by specific space ID")
@@ -118,6 +154,328 @@ class QlikContextUseParams(BaseModel):
 class QlikContextRemoveParams(BaseModel):
     """Parameters for removing a Qlik context"""
     name: str = Field(description="Name of the context to remove")
+
+
+# App Export and Import Tools
+
+@mcp.tool()
+def qlik_app_export(params: QlikAppExportParams) -> Dict[str, Any]:
+    """
+    Export Qlik application to local file for backup, migration, or version control
+    
+    This tool exports a Qlik application to various formats (QVF, JSON, XLSX) for
+    backup, migration between environments, or version control purposes. It supports
+    exporting with or without data and provides progress feedback for large exports.
+    The exported files can be used for app lifecycle management, DevOps workflows,
+    and collaboration between teams.
+    
+    Args:
+        params: QlikAppExportParams containing export configuration
+        
+    Returns:
+        Dictionary containing export result, file information, and operation details
+        
+    Raises:
+        Exception: If the export operation fails
+    """
+    logger.info(f"Exporting Qlik app '{params.app_identifier}' to '{params.output_path}'")
+    
+    try:
+        # Execute the app export
+        result = qlik_cli.app_export(
+            app_identifier=params.app_identifier,
+            output_path=params.output_path,
+            format=params.format,
+            include_data=params.include_data,
+            no_data=params.no_data
+        )
+        
+        # Format the output for better readability
+        export_summary = {
+            'app_identifier': result['app_identifier'],
+            'output_file': result['output_path'],
+            'format': result['format'].upper(),
+            'file_size': f"{result['file_size_mb']} MB ({result['file_size_bytes']:,} bytes)",
+            'includes_data': result['include_data'],
+            'export_duration': f"{result['export_duration_seconds']} seconds"
+        }
+        
+        logger.info(f"Successfully exported app '{params.app_identifier}' ({result['file_size_mb']} MB)")
+        
+        return {
+            "success": True,
+            "message": f"Successfully exported '{params.app_identifier}' to {params.format.upper()} format",
+            "export_summary": export_summary,
+            "file_path": result['output_path'],
+            "recommendations": [
+                "Verify the exported file can be opened in Qlik Sense",
+                "Store the file in a secure location for backup purposes",
+                "Consider version control integration for collaborative development"
+            ]
+        }
+        
+    except QlikCLIError as e:
+        error_msg = f"Failed to export Qlik app '{params.app_identifier}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    
+    except Exception as e:
+        error_msg = f"Unexpected error exporting Qlik app '{params.app_identifier}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+
+
+@mcp.tool()
+def qlik_app_import(params: QlikAppImportParams) -> Dict[str, Any]:
+    """
+    Import Qlik application from local file to create new app in tenant
+    
+    This tool imports a Qlik application from a local QVF file, creating a new app
+    in the specified space. It includes pre-import validation, conflict detection,
+    and post-import verification. This is essential for app migration, deployment
+    workflows, and restoring apps from backups.
+    
+    Args:
+        params: QlikAppImportParams containing import configuration
+        
+    Returns:
+        Dictionary containing import result, new app information, and verification details
+        
+    Raises:
+        Exception: If the import operation fails
+    """
+    logger.info(f"Importing Qlik app from '{params.file_path}' with name '{params.app_name}'")
+    
+    try:
+        # Execute the app import
+        result = qlik_cli.app_import(
+            file_path=params.file_path,
+            app_name=params.app_name,
+            space_id=params.space_id,
+            replace_existing=params.replace_existing,
+            validate_before_import=params.validate_before_import
+        )
+        
+        # Format the output for better readability
+        import_summary = {
+            'source_file': result['file_path'],
+            'app_name': result['app_name'],
+            'new_app_id': result['new_app_id'] or 'Not available',
+            'target_space': result['space_id'] or 'Personal Space',
+            'replaced_existing': 'Yes' if result['replaced_existing'] else 'No',
+            'import_duration': f"{result['import_duration_seconds']} seconds",
+            'verification_status': 'Verified' if result['verification_result'] else 'Could not verify'
+        }
+        
+        # Add verification details if available
+        verification_info = []
+        if result['verification_result'] and result['verification_result']['success']:
+            app_details = result['verification_result']['app']
+            verification_info = [
+                f"App successfully created with ID: {result['new_app_id']}",
+                f"App is located in space: {app_details['space']['name']}",
+                f"App owner: {app_details['owner']['name']}",
+                f"App has data: {'Yes' if app_details['has_data'] else 'No'}"
+            ]
+        
+        logger.info(f"Successfully imported app '{result['app_name']}' (ID: {result['new_app_id']})")
+        
+        return {
+            "success": True,
+            "message": f"Successfully imported '{result['app_name']}' from {params.file_path}",
+            "import_summary": import_summary,
+            "new_app_id": result['new_app_id'],
+            "verification_details": verification_info,
+            "next_steps": [
+                "Open the app in Qlik Sense to verify functionality",
+                "Check data connections if the app uses external data sources",
+                "Review and update app permissions as needed",
+                "Consider publishing to a managed space for broader access"
+            ]
+        }
+        
+    except QlikCLIError as e:
+        error_msg = f"Failed to import Qlik app from '{params.file_path}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    
+    except Exception as e:
+        error_msg = f"Unexpected error importing Qlik app from '{params.file_path}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+
+
+@mcp.tool()
+def qlik_app_copy(params: QlikAppCopyParams) -> Dict[str, Any]:
+    """
+    Copy existing Qlik application within the same tenant
+    
+    This tool creates a copy of an existing Qlik application within the same tenant,
+    optionally copying to a different space. It supports copying with or without data
+    and can preserve permissions. This is useful for creating development copies,
+    templates, or distributing apps across different spaces.
+    
+    Args:
+        params: QlikAppCopyParams containing copy configuration
+        
+    Returns:
+        Dictionary containing copy result, new app information, and operation details
+        
+    Raises:
+        Exception: If the copy operation fails
+    """
+    logger.info(f"Copying Qlik app '{params.source_app_id}' to new app '{params.target_name}'")
+    
+    try:
+        # Execute the app copy
+        result = qlik_cli.app_copy(
+            source_app_id=params.source_app_id,
+            target_name=params.target_name,
+            target_space_id=params.target_space_id,
+            include_data=params.include_data,
+            copy_permissions=params.copy_permissions
+        )
+        
+        # Format the output for better readability
+        copy_summary = {
+            'source_app': {
+                'id': result['source_app_id'],
+                'name': result['source_app_name']
+            },
+            'target_app': {
+                'id': result['new_app_id'] or 'Not available',
+                'name': result['target_name']
+            },
+            'target_space_id': result['target_space_id'],
+            'data_included': 'Yes' if result['include_data'] else 'No',
+            'permissions_copied': 'Yes' if result['copy_permissions'] else 'No',
+            'copy_duration': f"{result['copy_duration_seconds']} seconds",
+            'verification_status': 'Verified' if result['verification_result'] else 'Could not verify'
+        }
+        
+        # Add verification details if available
+        verification_info = []
+        if result['verification_result'] and result['verification_result']['success']:
+            app_details = result['verification_result']['app']
+            verification_info = [
+                f"Copy successfully created with ID: {result['new_app_id']}",
+                f"Copy is located in space: {app_details['space']['name']}",
+                f"Copy owner: {app_details['owner']['name']}",
+                f"Copy has data: {'Yes' if app_details['has_data'] else 'No'}"
+            ]
+        
+        logger.info(f"Successfully copied app '{params.source_app_id}' to '{result['target_name']}' (ID: {result['new_app_id']})")
+        
+        return {
+            "success": True,
+            "message": f"Successfully copied '{result['source_app_name']}' to '{result['target_name']}'",
+            "copy_summary": copy_summary,
+            "new_app_id": result['new_app_id'],
+            "verification_details": verification_info,
+            "recommendations": [
+                "Open the copied app to verify all functionality works correctly",
+                "Update any hardcoded references that might point to the original app",
+                "Review and adjust permissions for the copied app as needed",
+                "Consider renaming objects within the app to reflect the new purpose"
+            ]
+        }
+        
+    except QlikCLIError as e:
+        error_msg = f"Failed to copy Qlik app '{params.source_app_id}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    
+    except Exception as e:
+        error_msg = f"Unexpected error copying Qlik app '{params.source_app_id}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+
+
+@mcp.tool()
+def qlik_app_publish(params: QlikAppPublishParams) -> Dict[str, Any]:
+    """
+    Publish Qlik application to managed space for broader access
+    
+    This tool publishes a Qlik application from a personal or shared space to a
+    managed space, making it available to a broader audience. It validates managed
+    space permissions, handles naming conflicts, and provides publication status
+    tracking. This is essential for promoting apps from development to production.
+    
+    Args:
+        params: QlikAppPublishParams containing publication configuration
+        
+    Returns:
+        Dictionary containing publication result, published app information, and details
+        
+    Raises:
+        Exception: If the publication operation fails
+    """
+    logger.info(f"Publishing Qlik app '{params.app_id}' to managed space '{params.target_space_id}'")
+    
+    try:
+        # Execute the app publication
+        result = qlik_cli.app_publish(
+            app_id=params.app_id,
+            target_space_id=params.target_space_id,
+            publish_name=params.publish_name,
+            replace_existing=params.replace_existing
+        )
+        
+        # Format the output for better readability
+        publish_summary = {
+            'source_app': {
+                'id': result['source_app_id'],
+                'name': result['source_app_name']
+            },
+            'published_app': {
+                'id': result['published_app_id'] or 'Not available',
+                'name': result['publish_name']
+            },
+            'target_space': {
+                'id': result['target_space_id'],
+                'name': result['target_space_name']
+            },
+            'replaced_existing': 'Yes' if result['replaced_existing'] else 'No',
+            'publish_duration': f"{result['publish_duration_seconds']} seconds",
+            'verification_status': 'Verified' if result['verification_result'] else 'Could not verify'
+        }
+        
+        # Add verification details if available
+        verification_info = []
+        if result['verification_result'] and result['verification_result']['success']:
+            app_details = result['verification_result']['app']
+            verification_info = [
+                f"App successfully published with ID: {result['published_app_id']}",
+                f"Published app is in managed space: {result['target_space_name']}",
+                f"Published app owner: {app_details['owner']['name']}",
+                f"App is now accessible to space members"
+            ]
+        
+        logger.info(f"Successfully published app '{params.app_id}' to space '{result['target_space_name']}' (Published ID: {result['published_app_id']})")
+        
+        return {
+            "success": True,
+            "message": f"Successfully published '{result['source_app_name']}' to managed space '{result['target_space_name']}'",
+            "publish_summary": publish_summary,
+            "published_app_id": result['published_app_id'],
+            "verification_details": verification_info,
+            "next_steps": [
+                "Verify the published app is accessible to intended users",
+                "Update any bookmarks or links to point to the published version",
+                "Consider setting up automated refresh schedules if needed",
+                "Review and configure appropriate access permissions for space members"
+            ]
+        }
+        
+    except QlikCLIError as e:
+        error_msg = f"Failed to publish Qlik app '{params.app_id}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    
+    except Exception as e:
+        error_msg = f"Unexpected error publishing Qlik app '{params.app_id}': {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
 
 
 # App Discovery Tools
@@ -815,6 +1173,11 @@ def main():
     
     # Log available tools
     logger.info("Available MCP tools:")
+    logger.info("  App Lifecycle Management:")
+    logger.info("    - qlik_app_export: Export apps to local files for backup/migration")
+    logger.info("    - qlik_app_import: Import apps from local files to create new apps")
+    logger.info("    - qlik_app_copy: Copy existing apps within the same tenant")
+    logger.info("    - qlik_app_publish: Publish apps to managed spaces")
     logger.info("  App Discovery:")
     logger.info("    - qlik_app_list: List available apps with filtering options")
     logger.info("    - qlik_app_get: Get detailed information about a specific app")
