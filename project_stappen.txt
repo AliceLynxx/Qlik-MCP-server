@@ -215,6 +215,56 @@
   - **Migration**: Apps exporteren voor versie controle en migratie
   - **Template Creation**: App structuren inspecteren voor template ontwikkeling
 
+## Stap 6.2: .env-example bestand met QVF export locatie configuratie (must-have) - ✅ VOLTOOID
+**Omschrijving**: Een .env-example bestand toevoegen dat gebruikers helpt bij het configureren van hun omgeving, met speciale aandacht voor QVF export locaties en andere belangrijke configuratie-opties
+**Status**: Volledig geïmplementeerd in feature/env-example-qvf-export branch
+**Resultaat**:
+- **.env-example bestand aangemaakt**:
+  - **Uitgebreide configuratie template**: Alle beschikbare configuratie-opties gedocumenteerd
+  - **Georganiseerde categorieën**: Qlik CLI, authenticatie, context management, app management, server configuratie
+  - **QVF Export configuratie**: Dedicated sectie voor `QLIK_QVF_EXPORT_DIRECTORY` configuratie
+  - **Duidelijke documentatie**: Elke configuratie optie heeft uitgebreide beschrijving en voorbeelden
+  - **Configuratie voorbeelden**: Verschillende scenario's (context-based auth, direct auth, development setup)
+  - **Best practices**: Aanbevelingen voor productie en development omgevingen
+  - **Security considerations**: Veilige configuratie van credentials en paths
+- **Config.py uitbreidingen**:
+  - **QVF Export Directory ondersteuning**:
+    - `qvf_export_directory`: Nieuwe parameter in QlikConfig (default: "./exports")
+    - Environment variable ondersteuning: `QLIK_QVF_EXPORT_DIRECTORY`
+    - `validate_qvf_export_directory()`: Validatie methode voor export directory
+    - `get_qvf_export_directory()`: Helper methode om export directory op te halen/aanmaken
+  - **Enhanced configuratie validatie**:
+    - QVF export directory wordt gevalideerd bij startup
+    - Automatische directory aanmaak indien niet bestaat
+    - Schrijfrechten verificatie en error handling
+    - Integratie met bestaande configuratie structuur
+- **README.md updates**:
+  - **Verwijzing naar .env-example**: Duidelijke instructies voor configuratie setup
+  - **Uitgebreide configuratie tabel**: Nieuwe QVF export directory optie toegevoegd
+  - **Configuratie sectie uitgebreid**: Stap-voor-stap instructies voor .env-example gebruik
+  - **QVF Export Directory documentatie**: Specifieke sectie over export directory functionaliteit
+  - **Troubleshooting uitgebreid**: Nieuwe troubleshooting sectie voor export directory problemen
+- **Functionaliteiten**:
+  - **Gebruikersvriendelijke configuratie**: Eenvoudige setup via .env-example kopiëren
+  - **Comprehensive documentation**: Alle opties uitgelegd met voorbeelden
+  - **QVF Export Management**: Dedicated directory voor QVF export operaties
+  - **Automatic directory creation**: Export directory wordt automatisch aangemaakt
+  - **Validation & Security**: Directory permissions en path validatie
+  - **Environment flexibility**: Ondersteuning voor verschillende omgevingen
+  - **Configuration transparency**: Duidelijke documentatie van alle opties
+- **User Experience verbeteringen**:
+  - **Quick start**: Gebruikers kunnen snel aan de slag met `cp .env-example .env`
+  - **Self-documenting**: Het .env-example bestand is zelf-documenterend
+  - **Example scenarios**: Verschillende configuratie voorbeelden voor verschillende use cases
+  - **Clear guidance**: Duidelijke instructies en aanbevelingen
+  - **Error prevention**: Voorkomt veelvoorkomende configuratie fouten
+- **Use Cases ondersteund**:
+  - **Development setup**: Snelle configuratie voor ontwikkelaars
+  - **Production deployment**: Veilige configuratie voor productie omgevingen
+  - **Multi-environment**: Verschillende configuraties voor verschillende omgevingen
+  - **QVF Export workflows**: Gestandaardiseerde locatie voor QVF export operaties
+  - **Backup & Migration**: Configureerbare export locaties voor backup workflows
+
 ## Stap 7: App Reload Management (must-have)
 **Omschrijving**: Apps kunnen reloaden en reload status monitoren
 **Doel**: Data in apps moet up-to-date gehouden kunnen worden door reloads te triggeren en te monitoren. Dit is essentieel voor productie omgevingen waar data regelmatig wordt bijgewerkt.
