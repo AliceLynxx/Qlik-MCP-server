@@ -162,6 +162,9 @@ class QlikAppBuildMixin:
             # Ensure directory exists
             self._ensure_directory_exists(target_dir)
             cmd.extend(['--dir', target_dir])
+            logger.info(f"Using unbuild directory: {target_dir}")
+        else:
+            logger.info("Using qlik-cli default unbuild behavior (current directory)")
         
         # Add boolean flags
         if no_data:
@@ -189,20 +192,26 @@ class QlikAppBuildMixin:
         """
         # Explicit directory has highest priority
         if explicit_dir:
+            logger.debug(f"Using explicit directory: {explicit_dir}")
             return explicit_dir
         
         # Check for default directory from configuration
-        if hasattr(self.config.qlik, 'get_unbuild_directory'):
+        try:
             default_dir = self.config.qlik.get_unbuild_directory()
             if default_dir:
+                logger.debug(f"Using configured default directory: {default_dir}")
                 return default_dir
+        except Exception as e:
+            logger.warning(f"Failed to get unbuild directory from config: {e}")
         
-        # Fallback to environment variable
+        # Fallback to environment variable (redundant but safe)
         env_dir = os.getenv('QLIK_DEFAULT_UNBUILD_DIRECTORY')
         if env_dir:
+            logger.debug(f"Using environment variable directory: {env_dir}")
             return env_dir
         
         # No directory specified, let qlik-cli use its default behavior
+        logger.debug("No unbuild directory configured, using qlik-cli default")
         return None
     
     def _ensure_directory_exists(self, directory: str) -> None:
