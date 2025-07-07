@@ -30,17 +30,33 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
   - **Multi-context ondersteuning**: Context-gebaseerde authenticatie voor multi-tenant omgevingen
   - **Legacy ondersteuning**: Directe API key authenticatie voor eenvoudige setups
   - **Context directory management**: Configureerbare opslag locatie voor context bestanden
+  - **Enhanced app unbuild configuratie**: 
+    - `default_unbuild_directory`: Default locatie voor app unbuild operaties
+    - `include_file_contents_in_output`: Schakelaar voor bestandsinhoud in output
+    - Environment variable ondersteuning: `QLIK_DEFAULT_UNBUILD_DIRECTORY`, `QLIK_INCLUDE_FILE_CONTENTS`
 - **requirements.txt**: Dependency management met FastMCP en andere benodigde packages
 - **README.md**: Uitgebreide documentatie voor installatie en gebruik
 - **qlik_cli_reference.txt**: Volledige qlik-cli referentie documentatie voor integratie
 
 ### Qlik CLI Integratie
-- **qlik_tools.py**: Kern module met QlikCLI klasse voor qlik-cli integratie
-  - **QlikCLI klasse**: Python interface naar qlik-cli commando's
-  - **App Management**:
+- **qlik_tools/**: Gemodulariseerde package structuur voor qlik-cli integratie
+  - **qlik_cli_combined.py**: Hoofdklasse QlikCLI die alle functionaliteiten combineert
+  - **qlik_tools_app_build.py**: App build en unbuild functionaliteiten
     - **app_build()**: Volledige ondersteuning voor qlik app build met alle parameters
-    - **app_unbuild()**: Ondersteuning voor qlik app unbuild functionaliteit
-  - **App Lifecycle Management**: Nieuwe functionaliteiten voor complete app lifecycle
+    - **app_unbuild()**: Enhanced ondersteuning voor qlik app unbuild functionaliteit
+      - **Default directory management**: Automatische directory selectie uit configuratie
+      - **Directory creation**: Automatisch aanmaken van target directories
+      - **File content reading**: Inlezen van alle uitgepakte bestanden
+      - **Structured file organization**: Categorisatie van bestanden (script, dimensions, measures, etc.)
+      - **Error handling**: Graceful handling van onleesbare bestanden
+      - **Security**: Path traversal validatie en file size limits
+      - **Performance**: Memory-bewust omgaan met grote bestanden
+  - **qlik_tools_app_lifecycle.py**: App export, import, copy, publish functionaliteiten
+  - **qlik_tools_app_discovery.py**: App discovery en search functionaliteiten
+  - **qlik_tools_space_management.py**: Space management functionaliteiten
+  - **qlik_tools_context_management.py**: Context management functionaliteiten
+  - **qlik_cli_base.py**: Basis klasse met gemeenschappelijke functionaliteiten
+  - **App Lifecycle Management**: Volledige functionaliteiten voor complete app lifecycle
     - **app_export()**: Export apps naar verschillende formaten (QVF, JSON, XLSX)
       - Ondersteuning voor export met/zonder data
       - Progress monitoring voor grote exports
@@ -100,7 +116,15 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
       - `qlik_space_list`: Overzicht van beschikbare spaces met app counts
     - **App Management**:
       - `qlik_app_build`: Bouw Qlik apps met alle qlik-cli parameters
-      - `qlik_app_unbuild`: Export Qlik apps naar component bestanden
+      - `qlik_app_unbuild`: **ENHANCED** - Export Qlik apps naar component bestanden met:
+        - **Automatic directory management**: Gebruik van default directory uit configuratie
+        - **File content return**: Alle uitgepakte bestanden worden ingelezen en geretourneerd
+        - **Structured output**: Georganiseerde bestandsstructuur in response
+        - **File categorization**: Script, dimensions, measures, objects, variables, bookmarks, etc.
+        - **Enhanced error handling**: Graceful handling van onleesbare bestanden
+        - **Configuration integration**: Ondersteuning voor environment variables
+        - **Recommendations**: Intelligente suggesties gebaseerd op uitgepakte content
+        - **Next steps guidance**: Duidelijke vervolgstappen voor gebruikers
     - **Context Management**:
       - `qlik_context_create`: Nieuwe authenticatie context aanmaken
       - `qlik_context_list`: Alle beschikbare contexts tonen
@@ -122,7 +146,7 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
       - QlikSpaceListParams: Parameters voor space listing met type filtering
     - **App Management Models**:
       - QlikAppBuildParams: App build parameters
-      - QlikAppUnbuildParams: App unbuild parameters
+      - QlikAppUnbuildParams: App unbuild parameters (unchanged interface, enhanced functionality)
     - **Context Management Models**:
       - QlikContextCreateParams: Context aanmaak parameters
       - QlikContextUseParams: Context switching parameters
@@ -133,6 +157,39 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
   - **Server Management**: Proper startup, shutdown en configuratie validatie
 
 ## Technische Details
+
+### Enhanced App Unbuild Functionaliteiten
+- **Default Directory Management**:
+  - Automatische directory selectie uit `QLIK_DEFAULT_UNBUILD_DIRECTORY` environment variable
+  - Fallback naar configuratie setting `default_unbuild_directory`
+  - Expliciete directory parameter heeft altijd voorrang
+  - Automatisch aanmaken van directories indien niet bestaand
+  - Directory permissions validatie
+- **File Content Processing**:
+  - Automatisch inlezen van alle uitgepakte bestanden na unbuild
+  - Categorisatie van bestanden op type (script, dimensions, measures, objects, variables, bookmarks, app_properties, connections)
+  - Pattern-based file detection voor verschillende bestandstypen
+  - Ondersteuning voor verschillende encodings (UTF-8, Latin-1, CP1252)
+  - Binary file handling met Base64 encoding
+  - File size limits (10MB) voor veiligheid
+- **Structured Output**:
+  - Georganiseerde bestandsstructuur in JSON response
+  - File metadata (naam, pad, grootte, inhoud)
+  - Error handling per bestand (onleesbare bestanden worden gerapporteerd)
+  - Summary informatie (aantal bestanden per categorie)
+  - Configuration informatie over gebruikte settings
+- **Enhanced User Experience**:
+  - Intelligente recommendations gebaseerd op uitgepakte content
+  - Next steps guidance voor vervolgacties
+  - Clear indication of used directory (default vs explicit)
+  - File summary met counts per categorie
+  - Configuration transparency (welke settings werden gebruikt)
+- **Security & Performance**:
+  - Path traversal validatie voor veiligheid
+  - File size limits om memory issues te voorkomen
+  - Graceful error handling voor onleesbare bestanden
+  - Cleanup bij gedeeltelijke failures
+  - Memory-efficient file processing
 
 ### MCP Server Functionaliteiten
 - **FastMCP Framework**: Moderne, snelle MCP server implementatie
@@ -189,11 +246,28 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 - App properties: json configuratie bestanden
 - Opties: no-save, silent mode
 
-### Qlik App Unbuild Ondersteuning  
-- App export naar directory structuur
-- Configureerbare export directory
-- No-data optie voor apps zonder data
-- Automatische generatie van config.yml
+### Enhanced Qlik App Unbuild Ondersteuning  
+- **Backward Compatible**: Bestaande interface blijft ongewijzigd
+- **Enhanced Directory Management**:
+  - Default directory uit environment variable (`QLIK_DEFAULT_UNBUILD_DIRECTORY`)
+  - Automatisch directory aanmaken indien niet bestaand
+  - Directory permissions validatie
+  - Expliciete directory parameter heeft voorrang
+- **File Content Integration**:
+  - Alle uitgepakte bestanden worden automatisch ingelezen
+  - Gestructureerde categorisatie van bestandstypen
+  - Robuuste encoding detection en error handling
+  - File size limits voor veiligheid
+- **Enhanced Output**:
+  - Structured file contents in response
+  - File summary met counts per categorie
+  - Intelligent recommendations gebaseerd op content
+  - Configuration transparency
+  - Next steps guidance
+- **Configuration Options**:
+  - `include_file_contents_in_output`: Schakelaar voor bestandsinhoud (default: true)
+  - Environment variable ondersteuning
+  - Configureerbare default directories
 
 ### Error Handling & Logging
 - Subprocess timeout management
@@ -214,6 +288,7 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 - **Qlik CLI Integration**: Gebaseerd op volledige qlik-cli referentie (zie qlik_cli_reference.txt)
 - **Context Management**: Integratie met qlik-cli context systeem voor multi-tenant ondersteuning
 - **JSON Processing**: Robuuste parsing van qlik-cli JSON output
+- **Modular Design**: Georganiseerde package structuur voor maintainability
 
 ## Gebruik
 
@@ -221,6 +296,87 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
 De server kan gestart worden met:
 ```bash
 python app.py
+```
+
+### Enhanced App Unbuild Workflows
+
+#### Basis Unbuild (ongewijzigd)
+```
+qlik_app_unbuild(app="MyApp", dir="/path/to/export")
+```
+
+#### Enhanced Unbuild met Default Directory
+```
+# Configureer environment variable
+export QLIK_DEFAULT_UNBUILD_DIRECTORY="/default/unbuild/path"
+
+# Unbuild gebruikt automatisch default directory
+qlik_app_unbuild(app="MyApp")
+```
+
+#### Enhanced Output met File Contents
+```json
+{
+  "success": true,
+  "message": "Successfully unbuilt Qlik app: MyApp",
+  "app": "MyApp",
+  "unbuild_summary": {
+    "app_name": "MyApp",
+    "target_directory": "/default/unbuild/path",
+    "used_default_directory": true,
+    "files_extracted": 15,
+    "no_data_mode": false
+  },
+  "file_summary": {
+    "script_files": 1,
+    "dimension_files": 3,
+    "measure_files": 5,
+    "object_files": 4,
+    "variable_files": 2,
+    "bookmark_files": 0,
+    "app_properties_files": 1,
+    "connection_files": 1,
+    "other_files": 0
+  },
+  "file_contents": {
+    "script": {
+      "filename": "script.qvs",
+      "path": "script.qvs",
+      "size": 2048,
+      "content": "LOAD * FROM [lib://DataFiles/sales.xlsx];"
+    },
+    "dimensions": [
+      {
+        "filename": "dimension_1.json",
+        "path": "dimensions/dimension_1.json",
+        "size": 512,
+        "content": "{\"qInfo\":{\"qType\":\"dimension\"},...}"
+      }
+    ],
+    "measures": [...],
+    "objects": [...],
+    "variables": [...],
+    "app_properties": {...},
+    "connections": {...}
+  },
+  "recommendations": [
+    "Review the extracted script file for data loading logic",
+    "Examine dimensions and measures for business logic",
+    "Check object definitions for visualization configurations",
+    "Update connection settings for target environment"
+  ],
+  "configuration_info": {
+    "default_unbuild_directory_configured": true,
+    "default_directory": "/default/unbuild/path",
+    "file_contents_enabled": true
+  },
+  "next_steps": [
+    "Verify all expected files have been extracted to the target directory",
+    "Review file contents for any environment-specific configurations",
+    "Consider organizing extracted files in version control system",
+    "Use extracted components for app migration or backup purposes"
+  ]
+}
 ```
 
 ### App Lifecycle Management Workflows
@@ -333,7 +489,7 @@ MCP clients kunnen verbinding maken en de volgende tools gebruiken:
 
 **App Management:**
 - `qlik_app_build`: Voor het bouwen van Qlik applicaties
-- `qlik_app_unbuild`: Voor het exporteren van Qlik applicaties
+- `qlik_app_unbuild`: **ENHANCED** - Voor het exporteren van Qlik applicaties met file content return
 
 **Context Management:**
 - `qlik_context_create`: Nieuwe authenticatie context aanmaken
