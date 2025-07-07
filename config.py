@@ -59,6 +59,12 @@ class QlikConfig(BaseModel):
         description="Include file contents in unbuild output"
     )
     
+    # QVF Export settings
+    qvf_export_directory: str = Field(
+        default="./exports",
+        description="Directory for QVF export operations"
+    )
+    
     # Timeout settings
     command_timeout: int = Field(
         default=300,
@@ -109,6 +115,24 @@ class QlikConfig(BaseModel):
         except (OSError, ValueError):
             return False
 
+    def validate_qvf_export_directory(self) -> bool:
+        """
+        Validate that QVF export directory exists and is accessible
+        
+        Returns:
+            True if directory is valid and accessible, False otherwise
+        """
+        try:
+            export_path = Path(self.qvf_export_directory)
+            if export_path.exists():
+                return export_path.is_dir() and os.access(export_path, os.R_OK | os.W_OK)
+            else:
+                # Check if parent directory exists and is writable
+                parent = export_path.parent
+                return parent.exists() and parent.is_dir() and os.access(parent, os.W_OK)
+        except (OSError, ValueError):
+            return False
+
     def get_unbuild_directory(self) -> Optional[str]:
         """
         Get the default unbuild directory, creating it if necessary
@@ -126,6 +150,29 @@ class QlikConfig(BaseModel):
             return str(unbuild_path)
         except (OSError, ValueError):
             return None
+
+    def get_qvf_export_directory(self) -> str:
+        """
+        Get the QVF export directory, creating it if necessary
+        
+        Returns:
+            Path to QVF export directory
+            
+        Raises:
+            OSError: If directory cannot be created or accessed
+        """
+        try:
+            export_path = Path(self.qvf_export_directory)
+            if not export_path.exists():
+                export_path.mkdir(parents=True, exist_ok=True)
+            
+            # Verify the directory is accessible
+            if not (export_path.is_dir() and os.access(export_path, os.R_OK | os.W_OK)):
+                raise OSError(f"QVF export directory is not accessible: {export_path}")
+            
+            return str(export_path.resolve())
+        except (OSError, ValueError) as e:
+            raise OSError(f"Failed to create or access QVF export directory '{self.qvf_export_directory}': {e}")
 
 
 class ServerConfig(BaseModel):
@@ -173,6 +220,7 @@ class Config(BaseModel):
             context_directory=os.getenv('QLIK_CONTEXT_DIRECTORY'),
             default_unbuild_directory=os.getenv('QLIK_DEFAULT_UNBUILD_DIRECTORY'),
             include_file_contents_in_output=os.getenv('QLIK_INCLUDE_FILE_CONTENTS', 'true').lower() == 'true',
+            qvf_export_directory=os.getenv('QLIK_QVF_EXPORT_DIRECTORY', './exports'),
             command_timeout=int(os.getenv('QLIK_COMMAND_TIMEOUT', '300'))
         )
         
@@ -208,6 +256,10 @@ class Config(BaseModel):
             
             # Validate unbuild directory if configured
             if not self.qlik.validate_unbuild_directory():
+                return False
+            
+            # Validate QVF export directory
+            if not self.qlik.validate_qvf_export_directory():
                 return False
             
             return True
