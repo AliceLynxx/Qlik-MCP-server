@@ -162,6 +162,59 @@
   - **Template Creation**: Apps kopiëren zonder data als templates
   - **Publication Management**: Apps promoten naar managed spaces
 
+## Stap 6.1: Enhanced app_unbuild met default directory en file content return (must-have) - ✅ VOLTOOID
+**Omschrijving**: De `app_unbuild` functionaliteit uitbreiden met automatische directory management en bestandsinhoud return
+**Status**: Volledig geïmplementeerd in feature/enhanced-app-unbuild branch
+**Resultaat**:
+- **Configuratie uitbreidingen** (config.py):
+  - `default_unbuild_directory`: Default locatie voor app unbuild operaties
+  - `include_file_contents_in_output`: Schakelaar voor bestandsinhoud in output
+  - Environment variable ondersteuning: `QLIK_DEFAULT_UNBUILD_DIRECTORY`, `QLIK_INCLUDE_FILE_CONTENTS`
+  - Validatie methoden voor directory paths en permissions
+- **QlikCLI klasse uitbreidingen** (qlik_tools_app_build.py):
+  - **Enhanced app_unbuild()** methode:
+    - Default directory ophalen uit configuratie of environment variables
+    - Directory automatisch aanmaken indien niet bestaat
+    - Bestanden overschrijven indien al aanwezig
+    - Na unbuild: alle bestanden inlezen en inhoud toevoegen aan output
+    - Bestandsstructuur en metadata verzamelen
+  - **Helper methoden**:
+    - `_determine_unbuild_directory()`: Intelligente directory selectie
+    - `_ensure_directory_exists()`: Veilige directory aanmaak
+    - `_read_unbuild_files()`: Gestructureerd inlezen van uitgepakte bestanden
+    - `_read_file_content()`: Robuuste bestandsinlezing met encoding detection
+  - **File categorization**: Script, dimensions, measures, objects, variables, bookmarks, app_properties, connections
+  - **Security features**: Path traversal validatie, file size limits (10MB), encoding detection
+  - **Error handling**: Graceful handling van onleesbare bestanden, cleanup bij failures
+- **MCP Tool uitbreidingen** (app.py):
+  - **Enhanced qlik_app_unbuild** tool:
+    - Backward compatible interface (geen breaking changes)
+    - Uitgebreide output met bestandsinhoud en metadata
+    - File summary met counts per categorie
+    - Intelligente recommendations gebaseerd op uitgepakte content
+    - Configuration transparency (welke settings werden gebruikt)
+    - Next steps guidance voor vervolgacties
+  - **Enhanced output structuur**:
+    - `unbuild_summary`: App naam, target directory, file counts
+    - `file_summary`: Counts per bestandscategorie
+    - `file_contents`: Volledige bestandsinhoud georganiseerd per type
+    - `recommendations`: Intelligente suggesties gebaseerd op content
+    - `configuration_info`: Transparantie over gebruikte configuratie
+    - `next_steps`: Duidelijke vervolgstappen
+- **Functionaliteiten**:
+  - **Automatisering**: Geen handmatige directory specificatie meer nodig
+  - **Consistentie**: Alle unbuild operaties gebruiken dezelfde gestandaardiseerde locatie
+  - **Integratie**: De uitgepakte bestanden zijn direct beschikbaar voor verdere verwerking
+  - **Workflow optimalisatie**: Bestanden kunnen direct worden gebruikt in CI/CD pipelines
+  - **Backward compatibility**: Bestaande `dir` parameter blijft werken en heeft voorrang
+  - **Security**: Path traversal validatie, file size limits, sensitive data filtering
+  - **Performance**: Efficiënte bestandsinlezing, memory-bewust omgaan met grote bestanden
+- **Use Cases**:
+  - **DevOps Workflows**: Apps unbuilden in geautomatiseerde workflows
+  - **Content Analysis**: App componenten analyseren en bewerken
+  - **Migration**: Apps exporteren voor versie controle en migratie
+  - **Template Creation**: App structuren inspecteren voor template ontwikkeling
+
 ## Stap 7: App Reload Management (must-have)
 **Omschrijving**: Apps kunnen reloaden en reload status monitoren
 **Doel**: Data in apps moet up-to-date gehouden kunnen worden door reloads te triggeren en te monitoren. Dit is essentieel voor productie omgevingen waar data regelmatig wordt bijgewerkt.

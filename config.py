@@ -48,6 +48,17 @@ class QlikConfig(BaseModel):
         description="Directory for storing context configurations (defaults to qlik-cli default)"
     )
     
+    # App unbuild settings
+    default_unbuild_directory: Optional[str] = Field(
+        default=None,
+        description="Default directory for app unbuild operations"
+    )
+    
+    include_file_contents_in_output: bool = Field(
+        default=True,
+        description="Include file contents in unbuild output"
+    )
+    
     # Timeout settings
     command_timeout: int = Field(
         default=300,
@@ -75,6 +86,46 @@ class QlikConfig(BaseModel):
                 return parent.exists() and parent.is_dir() and os.access(parent, os.W_OK)
         except (OSError, ValueError):
             return False
+
+    def validate_unbuild_directory(self) -> bool:
+        """
+        Validate that unbuild directory exists and is accessible
+        
+        Returns:
+            True if directory is valid or None (no default), False otherwise
+        """
+        if not self.default_unbuild_directory:
+            # No default directory configured, this is valid
+            return True
+        
+        try:
+            unbuild_path = Path(self.default_unbuild_directory)
+            if unbuild_path.exists():
+                return unbuild_path.is_dir() and os.access(unbuild_path, os.R_OK | os.W_OK)
+            else:
+                # Check if parent directory exists and is writable
+                parent = unbuild_path.parent
+                return parent.exists() and parent.is_dir() and os.access(parent, os.W_OK)
+        except (OSError, ValueError):
+            return False
+
+    def get_unbuild_directory(self) -> Optional[str]:
+        """
+        Get the default unbuild directory, creating it if necessary
+        
+        Returns:
+            Path to unbuild directory or None if not configured
+        """
+        if not self.default_unbuild_directory:
+            return None
+        
+        try:
+            unbuild_path = Path(self.default_unbuild_directory)
+            if not unbuild_path.exists():
+                unbuild_path.mkdir(parents=True, exist_ok=True)
+            return str(unbuild_path)
+        except (OSError, ValueError):
+            return None
 
 
 class ServerConfig(BaseModel):
@@ -120,6 +171,8 @@ class Config(BaseModel):
             api_key=os.getenv('QLIK_API_KEY'),
             context_support=os.getenv('QLIK_CONTEXT_SUPPORT', 'true').lower() == 'true',
             context_directory=os.getenv('QLIK_CONTEXT_DIRECTORY'),
+            default_unbuild_directory=os.getenv('QLIK_DEFAULT_UNBUILD_DIRECTORY'),
+            include_file_contents_in_output=os.getenv('QLIK_INCLUDE_FILE_CONTENTS', 'true').lower() == 'true',
             command_timeout=int(os.getenv('QLIK_COMMAND_TIMEOUT', '300'))
         )
         
@@ -150,7 +203,12 @@ class Config(BaseModel):
             
             # If context support is enabled, validate context directory
             if self.qlik.context_support:
-                return self.qlik.validate_context_directory()
+                if not self.qlik.validate_context_directory():
+                    return False
+            
+            # Validate unbuild directory if configured
+            if not self.qlik.validate_unbuild_directory():
+                return False
             
             return True
             
