@@ -863,36 +863,35 @@ def qlik_app_build(params: QlikAppBuildParams) -> Dict[str, Any]:
 @mcp.tool()
 def qlik_app_unbuild(params: QlikAppUnbuildParams) -> Dict[str, Any]:
     """
-    Unbuild a Qlik application using qlik-cli with enhanced functionality
+    Unbuild a Qlik application using qlik-cli
     
     This tool exports a Qlik application by unbuilding it into its component parts
     such as scripts, dimensions, measures, objects, variables, and bookmarks.
     The components are saved to a specified directory for version control,
-    backup, or migration purposes. Enhanced with automatic directory management
-    and file content return for improved workflow integration.
+    backup, or migration purposes.
     
     Args:
         params: QlikAppUnbuildParams containing all unbuild parameters
         
     Returns:
-        Dictionary containing the unbuild result, execution details, and file contents
+        Dictionary containing the unbuild result and execution details
         
     Raises:
         Exception: If the unbuild operation fails
     """
-    logger.info(f"Starting enhanced qlik app unbuild for app: {params.app}")
+    logger.info(f"Starting qlik app unbuild for app: {params.app}")
     
     try:
         # Convert Pydantic model to dict for QlikCLI
         unbuild_params = params.model_dump(exclude_none=True)
         
-        # Execute the enhanced unbuild command
+        # Execute the unbuild command
         result = qlik_cli.app_unbuild(**unbuild_params)
         
         # Determine the actual directory used
         actual_directory = result.get('unbuild_directory', params.dir or 'current directory')
         
-        # Create enhanced response
+        # Create simplified response
         response = {
             "success": True,
             "message": f"Successfully unbuilt Qlik app: {params.app}",
@@ -901,69 +900,19 @@ def qlik_app_unbuild(params: QlikAppUnbuildParams) -> Dict[str, Any]:
                 "app_name": params.app,
                 "target_directory": actual_directory,
                 "used_default_directory": result.get('unbuild_directory') is not None and params.dir is None,
-                "files_extracted": result.get('files_found', 'Unknown'),
                 "no_data_mode": params.no_data
             },
             "command_result": result,
-            "parameters_used": unbuild_params
+            "parameters_used": unbuild_params,
+            "next_steps": [
+                "Verify all expected files have been extracted to the target directory",
+                "Review extracted files for any environment-specific configurations",
+                "Consider organizing extracted files in version control system",
+                "Use extracted components for app migration or backup purposes"
+            ]
         }
         
-        # Add file contents if available
-        if 'file_contents' in result:
-            file_contents = result['file_contents']
-            
-            # Create a summary of extracted files
-            file_summary = {
-                'script_files': 1 if file_contents.get('script') else 0,
-                'dimension_files': len(file_contents.get('dimensions', [])),
-                'measure_files': len(file_contents.get('measures', [])),
-                'object_files': len(file_contents.get('objects', [])),
-                'variable_files': len(file_contents.get('variables', [])),
-                'bookmark_files': len(file_contents.get('bookmarks', [])),
-                'app_properties_files': 1 if file_contents.get('app_properties') else 0,
-                'connection_files': 1 if file_contents.get('connections') else 0,
-                'other_files': len(file_contents.get('other_files', []))
-            }
-            
-            response["file_summary"] = file_summary
-            response["file_contents"] = file_contents
-            
-            # Add recommendations based on what was found
-            recommendations = []
-            if file_contents.get('script'):
-                recommendations.append("Review the extracted script file for data loading logic")
-            if file_contents.get('dimensions') or file_contents.get('measures'):
-                recommendations.append("Examine dimensions and measures for business logic")
-            if file_contents.get('objects'):
-                recommendations.append("Check object definitions for visualization configurations")
-            if file_contents.get('connections'):
-                recommendations.append("Update connection settings for target environment")
-            if file_contents.get('variables'):
-                recommendations.append("Review variables for environment-specific values")
-            
-            response["recommendations"] = recommendations if recommendations else [
-                "All app components have been successfully extracted",
-                "Review the files in the target directory for further processing",
-                "Consider version control integration for the extracted components"
-            ]
-        
-        # Add configuration information
-        if hasattr(config.qlik, 'default_unbuild_directory') and config.qlik.default_unbuild_directory:
-            response["configuration_info"] = {
-                "default_unbuild_directory_configured": True,
-                "default_directory": config.qlik.default_unbuild_directory,
-                "file_contents_enabled": getattr(config.qlik, 'include_file_contents_in_output', True)
-            }
-        
-        # Add next steps
-        response["next_steps"] = [
-            "Verify all expected files have been extracted to the target directory",
-            "Review file contents for any environment-specific configurations",
-            "Consider organizing extracted files in version control system",
-            "Use extracted components for app migration or backup purposes"
-        ]
-        
-        logger.info(f"Successfully completed enhanced unbuild for app: {params.app}")
+        logger.info(f"Successfully completed unbuild for app: {params.app}")
         
         return response
         
@@ -1238,8 +1187,6 @@ def main():
     else:
         logger.info("No default unbuild directory configured - using qlik-cli defaults")
     
-    logger.info(f"File contents in unbuild output: {getattr(config.qlik, 'include_file_contents_in_output', True)}")
-    
     # Validate Qlik CLI setup
     if not config.validate_qlik_setup():
         logger.error("Qlik CLI setup validation failed. Please check your qlik-cli installation and configuration.")
@@ -1261,7 +1208,7 @@ def main():
     logger.info("    - qlik_space_list: List available spaces with app counts")
     logger.info("  App Management:")
     logger.info("    - qlik_app_build: Build Qlik applications from components")
-    logger.info("    - qlik_app_unbuild: Export Qlik applications to components (ENHANCED)")
+    logger.info("    - qlik_app_unbuild: Export Qlik applications to components")
     logger.info("  Context Management:")
     logger.info("    - qlik_context_create: Create new authentication context")
     logger.info("    - qlik_context_list: List all available contexts")
