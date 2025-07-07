@@ -212,23 +212,38 @@ class Config(BaseModel):
     def from_env(cls) -> 'Config':
         """Create configuration from environment variables"""
         
+        # Helper function to convert string to boolean
+        def str_to_bool(value: Optional[str]) -> Optional[bool]:
+            if value is None:
+                return None
+            return value.lower() == 'true'
+        
+        # Helper function to convert string to int
+        def str_to_int(value: Optional[str]) -> Optional[int]:
+            if value is None:
+                return None
+            try:
+                return int(value)
+            except ValueError:
+                return None
+        
         qlik_config = QlikConfig(
-            cli_path=os.getenv('QLIK_CLI_PATH', 'qlik'),
+            cli_path=os.getenv('QLIK_CLI_PATH') or QlikConfig.model_fields['cli_path'].default,
             tenant_url=os.getenv('QLIK_TENANT_URL'),
             api_key=os.getenv('QLIK_API_KEY'),
-            context_support=os.getenv('QLIK_CONTEXT_SUPPORT', 'true').lower() == 'true',
+            context_support=str_to_bool(os.getenv('QLIK_CONTEXT_SUPPORT')) if os.getenv('QLIK_CONTEXT_SUPPORT') else QlikConfig.model_fields['context_support'].default,
             context_directory=os.getenv('QLIK_CONTEXT_DIRECTORY'),
             default_unbuild_directory=os.getenv('QLIK_DEFAULT_UNBUILD_DIRECTORY'),
-            include_file_contents_in_output=os.getenv('QLIK_INCLUDE_FILE_CONTENTS', 'true').lower() == 'true',
-            qvf_export_directory=os.getenv('QLIK_QVF_EXPORT_DIRECTORY', './exports'),
-            command_timeout=int(os.getenv('QLIK_COMMAND_TIMEOUT', '300'))
+            include_file_contents_in_output=str_to_bool(os.getenv('QLIK_INCLUDE_FILE_CONTENTS')) if os.getenv('QLIK_INCLUDE_FILE_CONTENTS') else QlikConfig.model_fields['include_file_contents_in_output'].default,
+            qvf_export_directory=os.getenv('QLIK_QVF_EXPORT_DIRECTORY') or QlikConfig.model_fields['qvf_export_directory'].default,
+            command_timeout=str_to_int(os.getenv('QLIK_COMMAND_TIMEOUT')) or QlikConfig.model_fields['command_timeout'].default
         )
         
         server_config = ServerConfig(
-            name=os.getenv('MCP_SERVER_NAME', 'qlik-mcp-server'),
-            version=os.getenv('MCP_SERVER_VERSION', '1.0.0'),
-            log_level=os.getenv('LOG_LEVEL', 'INFO'),
-            debug=os.getenv('DEBUG', 'false').lower() == 'true'
+            name=os.getenv('MCP_SERVER_NAME') or ServerConfig.model_fields['name'].default,
+            version=os.getenv('MCP_SERVER_VERSION') or ServerConfig.model_fields['version'].default,
+            log_level=os.getenv('LOG_LEVEL') or ServerConfig.model_fields['log_level'].default,
+            debug=str_to_bool(os.getenv('DEBUG')) if os.getenv('DEBUG') else ServerConfig.model_fields['debug'].default
         )
         
         return cls(qlik=qlik_config, server=server_config)
