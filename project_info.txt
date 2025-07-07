@@ -34,8 +34,19 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
     - `default_unbuild_directory`: Default locatie voor app unbuild operaties
     - `include_file_contents_in_output`: Schakelaar voor bestandsinhoud in output
     - Environment variable ondersteuning: `QLIK_DEFAULT_UNBUILD_DIRECTORY`, `QLIK_INCLUDE_FILE_CONTENTS`
+  - **QVF Export Directory Management**: 
+    - `qvf_export_directory`: Configureerbare locatie voor QVF export operaties
+    - Environment variable ondersteuning: `QLIK_QVF_EXPORT_DIRECTORY`
+    - Automatische directory aanmaak en validatie
+    - Schrijfrechten verificatie en error handling
+- **.env-example**: Uitgebreide configuratie template voor gebruikers
+  - **Georganiseerde configuratie categorieën**: Qlik CLI, authenticatie, context management, app management, server configuratie
+  - **Duidelijke documentatie**: Elke configuratie optie heeft uitgebreide beschrijving en voorbeelden
+  - **QVF Export configuratie**: Specifieke sectie voor QVF export directory configuratie
+  - **Configuratie voorbeelden**: Verschillende scenario's (context-based, direct auth, development setup)
+  - **Best practices**: Aanbevelingen voor productie en development omgevingen
 - **requirements.txt**: Dependency management met FastMCP en andere benodigde packages
-- **README.md**: Uitgebreide documentatie voor installatie en gebruik
+- **README.md**: Uitgebreide documentatie voor installatie en gebruik met verwijzing naar .env-example
 - **qlik_cli_reference.txt**: Volledige qlik-cli referentie documentatie voor integratie
 
 ### Qlik CLI Integratie
@@ -157,6 +168,27 @@ Deze referentie wordt gebruikt om ervoor te zorgen dat de MCP server integratie 
   - **Server Management**: Proper startup, shutdown en configuratie validatie
 
 ## Technische Details
+
+### Enhanced Configuration Management
+- **.env-example Template**:
+  - **Comprehensive Coverage**: Alle beschikbare configuratie opties gedocumenteerd
+  - **Categorized Organization**: Logische groepering van configuratie opties
+  - **QVF Export Configuration**: Dedicated sectie voor QVF export directory management
+  - **Usage Examples**: Verschillende configuratie scenario's met voorbeelden
+  - **Best Practice Guidance**: Aanbevelingen voor verschillende omgevingen
+  - **Security Considerations**: Veilige configuratie van credentials en paths
+- **QVF Export Directory Management**:
+  - **Automatic Directory Creation**: Directory wordt automatisch aangemaakt indien niet bestaat
+  - **Permission Validation**: Schrijfrechten worden gevalideerd bij configuratie
+  - **Path Security**: Validatie tegen directory traversal en onveilige paths
+  - **Environment Variable Support**: `QLIK_QVF_EXPORT_DIRECTORY` voor flexibele configuratie
+  - **Default Value**: Standaard `./exports` directory in project root
+  - **Integration**: Naadloze integratie met bestaande configuratie structuur
+- **Enhanced Configuration Validation**:
+  - **QVF Export Directory**: Validatie van export directory toegankelijkheid
+  - **Helper Methods**: `get_qvf_export_directory()` voor directory management
+  - **Error Handling**: Duidelijke foutmeldingen bij configuratie problemen
+  - **Startup Validation**: Configuratie wordt gevalideerd bij server startup
 
 ### Enhanced App Unbuild Functionaliteiten
 - **Default Directory Management**:
@@ -298,6 +330,16 @@ De server kan gestart worden met:
 python app.py
 ```
 
+### Configuration Setup
+Voor eenvoudige configuratie:
+```bash
+# Kopieer .env-example naar .env
+cp .env-example .env
+
+# Bewerk .env met je specifieke instellingen
+# Het bestand bevat uitgebreide documentatie en voorbeelden
+```
+
 ### Enhanced App Unbuild Workflows
 
 #### Basis Unbuild (ongewijzigd)
@@ -368,7 +410,8 @@ qlik_app_unbuild(app="MyApp")
   "configuration_info": {
     "default_unbuild_directory_configured": true,
     "default_directory": "/default/unbuild/path",
-    "file_contents_enabled": true
+    "file_contents_enabled": true,
+    "qvf_export_directory": "./exports"
   },
   "next_steps": [
     "Verify all expected files have been extracted to the target directory",
