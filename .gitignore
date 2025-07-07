@@ -1,3 +1,5 @@
 /venv
 .env
 qlik-mcp-server.log
+__pycache__
+qlik_tools/__pycache__
