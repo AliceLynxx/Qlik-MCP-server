@@ -11,6 +11,7 @@ Deze MCP server biedt een gestandaardiseerde interface voor Qlik Cloud operaties
 - **MCP Protocol Ondersteuning**: Volledige implementatie van het Model Context Protocol
 - **Qlik CLI Integratie**: Naadloze integratie met qlik-cli voor Qlik Cloud operaties
 - **App Management**: Ondersteuning voor qlik app build en unbuild operaties
+- **QVF Export**: Configureerbare QVF export functionaliteit met dedicated directory management
 - **Configureerbaar**: Flexibele configuratie via environment variables of config files
 
 ## Vereisten
@@ -63,7 +64,19 @@ pip install -r requirements.txt
 
 ### 3. Configuratie
 
-Maak een `.env` bestand aan in de root directory (optioneel):
+#### Configuratie met .env-example
+
+Voor eenvoudige configuratie, kopieer het `.env-example` bestand naar `.env` en pas de waarden aan:
+
+```bash
+cp .env-example .env
+```
+
+Het `.env-example` bestand bevat alle beschikbare configuratie-opties met uitgebreide documentatie en voorbeelden. Open het bestand om te zien welke opties beschikbaar zijn en hoe je ze kunt configureren.
+
+#### Handmatige configuratie
+
+Je kunt ook handmatig een `.env` bestand aanmaken in de root directory:
 
 ```env
 # Qlik CLI configuratie
@@ -71,6 +84,9 @@ QLIK_CLI_PATH=qlik
 QLIK_TENANT_URL=https://your-tenant.qlikcloud.com
 QLIK_API_KEY=your-api-key-here
 QLIK_COMMAND_TIMEOUT=300
+
+# QVF Export configuratie
+QLIK_QVF_EXPORT_DIRECTORY=./exports
 
 # MCP Server configuratie
 MCP_SERVER_NAME=qlik-mcp-server
@@ -113,14 +129,29 @@ De server biedt de volgende MCP tools:
 | `QLIK_CLI_PATH` | Pad naar qlik-cli executable | `qlik` |
 | `QLIK_TENANT_URL` | Qlik Cloud tenant URL | None |
 | `QLIK_API_KEY` | API key voor authenticatie | None |
+| `QLIK_CONTEXT_SUPPORT` | Context-based authenticatie inschakelen | `true` |
+| `QLIK_CONTEXT_DIRECTORY` | Directory voor context configuraties | None (qlik-cli default) |
+| `QLIK_DEFAULT_UNBUILD_DIRECTORY` | Standaard directory voor unbuild operaties | None |
+| `QLIK_QVF_EXPORT_DIRECTORY` | Directory voor QVF export operaties | `./exports` |
+| `QLIK_INCLUDE_FILE_CONTENTS` | Bestandsinhoud opnemen in unbuild output | `true` |
 | `QLIK_COMMAND_TIMEOUT` | Timeout voor commando's (seconden) | `300` |
 | `MCP_SERVER_NAME` | Server naam voor MCP | `qlik-mcp-server` |
+| `MCP_SERVER_VERSION` | Server versie | `1.0.0` |
 | `LOG_LEVEL` | Log niveau (DEBUG/INFO/WARNING/ERROR) | `INFO` |
 | `DEBUG` | Debug modus inschakelen | `false` |
 
 ### Configuratie Validatie
 
 De server valideert automatisch of qlik-cli correct is geconfigureerd bij het opstarten. Als er problemen zijn, worden deze gerapporteerd in de logs.
+
+### QVF Export Directory
+
+De `QLIK_QVF_EXPORT_DIRECTORY` configuratie bepaalt waar QVF bestanden naartoe geëxporteerd worden:
+
+- De directory wordt automatisch aangemaakt indien deze niet bestaat
+- Schrijfrechten worden gevalideerd bij het opstarten
+- Standaard locatie is `./exports` in de project directory
+- Kan worden aangepast naar elke gewenste locatie
 
 ## Ontwikkeling
 
@@ -132,6 +163,7 @@ Qlik-MCP-server/
 ├── qlik_tools.py        # Qlik CLI integratie module
 ├── config.py            # Configuratie en instellingen
 ├── requirements.txt     # Python dependencies
+├── .env-example         # Template voor environment configuratie
 ├── README.md           # Deze documentatie
 ├── project_info.txt    # Project informatie
 └── project_stappen.txt # Ontwikkel roadmap
@@ -160,6 +192,10 @@ Qlik-MCP-server/
 3. **"Connection timeout"**
    - Verhoog de `QLIK_COMMAND_TIMEOUT` waarde
    - Controleer je netwerkverbinding
+
+4. **"QVF export directory not accessible"**
+   - Controleer of de `QLIK_QVF_EXPORT_DIRECTORY` bestaat en schrijfbaar is
+   - Zorg ervoor dat het pad correct is opgegeven
 
 ### Logs
 
