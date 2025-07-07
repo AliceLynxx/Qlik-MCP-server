@@ -1,0 +1,178 @@
+# Repository Summary - Qlik-MCP-server
+
+## Project Overview
+Een Model Context Protocol (MCP) server die als interface dient tussen MCP clients en Qlik Cloud. De server maakt gebruik van de qlik-cli tool om Qlik Cloud functionaliteiten toegankelijk te maken via het MCP protocol. Het project biedt volledige app lifecycle management, discovery functionaliteiten, en context-gebaseerde multi-tenant authenticatie.
+
+## Repository Structure
+
+### Root Directory Files
+- `.gitignore` - Git ignore configuratie voor Python projecten
+- `README.md` - Hoofddocumentatie en installatie instructies
+- `start.txt` (2.0 KB) - Oorspronkelijke projectomschrijving en specificaties
+- `project_info.txt` (15.6 KB) - Uitgebreide projectdocumentatie met alle functionaliteiten
+- `project_stappen.txt` - Ontwikkelstappen en roadmap
+- `qlik-mcp-server.log` - Runtime logging bestand
+- `requirements.txt` (364 bytes) - Python dependencies voor het project
+
+### Core Application Files
+- `app.py` (47.2 KB) - **Hoofdbestand**: FastMCP server implementatie met alle MCP tools
+  - 16 geregistreerde MCP tools voor Qlik functionaliteiten
+  - Pydantic models voor type-safe parameter validatie
+  - Comprehensive error handling en logging
+  - App lifecycle management (export, import, copy, publish)
+  - App discovery (list, get, search, spaces)
+  - Context management voor multi-tenant authenticatie
+  - Utility tools (version, connection validation)
+
+- `qlik_tools.py` (66.8 KB) - **Kern module**: QlikCLI klasse voor qlik-cli integratie
+  - Python interface naar qlik-cli commando's
+  - Robuuste error handling en parameter validatie
+  - App export/import functionaliteiten met validatie
+  - App copy en publish operaties
+  - App discovery en search functionaliteiten
+  - Context management voor authenticatie
+  - Uitgebreide logging en security features
+  - JSON parsing en output formatting
+
+- `config.py` (5.9 KB) - **Configuratie module**: Centralized configuration management
+  - QlikConfig klasse voor qlik-cli instellingen
+  - ServerConfig klasse voor MCP server configuratie
+  - Environment variable support via .env files
+  - Context-based en direct authentication modes
+  - Validation functies voor setup verificatie
+
+### Documentation Files
+- `qlik_cli_reference.txt` - Volledige qlik-cli referentie documentatie voor integratie
+
+### Cache/Runtime Files
+- `__pycache__/` directory - Python bytecode cache
+  - `config.cpython-312.pyc` - Compiled config module
+  - `qlik_tools.cpython-312.pyc` - Compiled qlik_tools module
+
+## Architecture Overview
+
+### MCP Server Layer (app.py)
+- **FastMCP Framework**: Moderne MCP server implementatie
+- **Tool Registration**: 16 MCP tools voor verschillende Qlik operaties
+- **Parameter Validation**: Pydantic models voor type-safe input handling
+- **Error Handling**: Comprehensive foutafhandeling met duidelijke messages
+- **Logging**: Gestructureerde logging naar console en bestand
+
+### Qlik Integration Layer (qlik_tools.py)
+- **QlikCLI Class**: Python wrapper voor qlik-cli commando's
+- **Command Execution**: Subprocess management met timeout handling
+- **JSON Processing**: Robuuste parsing van qlik-cli output
+- **Validation**: Extensive parameter en file path validatie
+- **Security**: API key masking en secure credential handling
+
+### Configuration Layer (config.py)
+- **Multi-mode Authentication**: Context-based en direct API key support
+- **Environment Integration**: .env file support voor configuratie
+- **Validation**: Setup verificatie voor qlik-cli en authenticatie
+- **Flexibility**: Configureerbare timeouts, paths, en logging levels
+
+## Key Modules and Relationships
+
+### App Lifecycle Management
+- **Export**: `qlik_tools.app_export()` → `app.py:qlik_app_export()`
+- **Import**: `qlik_tools.app_import()` → `app.py:qlik_app_import()`
+- **Copy**: `qlik_tools.app_copy()` → `app.py:qlik_app_copy()`
+- **Publish**: `qlik_tools.app_publish()` → `app.py:qlik_app_publish()`
+
+### App Discovery
+- **List**: `qlik_tools.app_list()` → `app.py:qlik_app_list()`
+- **Get**: `qlik_tools.app_get()` → `app.py:qlik_app_get()`
+- **Search**: `qlik_tools.app_search()` → `app.py:qlik_app_search()`
+- **Spaces**: `qlik_tools.space_list()` → `app.py:qlik_space_list()`
+
+### Context Management
+- **Create**: `qlik_tools.context_create()` → `app.py:qlik_context_create()`
+- **List**: `qlik_tools.context_list()` → `app.py:qlik_context_list()`
+- **Use**: `qlik_tools.context_use()` → `app.py:qlik_context_use()`
+- **Remove**: `qlik_tools.context_remove()` → `app.py:qlik_context_remove()`
+
+### App Management (Legacy)
+- **Build**: `qlik_tools.app_build()` → `app.py:qlik_app_build()`
+- **Unbuild**: `qlik_tools.app_unbuild()` → `app.py:qlik_app_unbuild()`
+
+## Dependencies and External Integrations
+
+### Python Dependencies (requirements.txt)
+- **mcp>=1.6.0**: Core MCP protocol implementation
+- **pydantic>=2.0.0**: Type-safe data validation en serialization
+- **python-dotenv>=1.0.0**: Environment variable management
+- **httpx>=0.28.0**: HTTP client voor MCP communication
+- **anyio>=4.0.0**: Async I/O support
+- **pyyaml>=6.0**: YAML configuration file support
+- **requests>=2.32.0**: HTTP requests voor API calls
+
+### External Tools
+- **qlik-cli**: Command-line interface voor Qlik Cloud (must be installed separately)
+- **Qlik Cloud**: Target platform voor alle app operations
+
+## Data Flow Architecture
+
+1. **MCP Client Request** → FastMCP Server (app.py)
+2. **Parameter Validation** → Pydantic Models
+3. **Tool Execution** → QlikCLI Class (qlik_tools.py)
+4. **Command Building** → qlik-cli subprocess execution
+5. **Response Processing** → JSON parsing en formatting
+6. **Error Handling** → Comprehensive error management
+7. **Response Return** → Formatted output naar MCP client
+
+## Security Features
+
+### Authentication
+- **Context-based**: Multi-tenant support via qlik-cli contexts
+- **Direct API Key**: Legacy support voor single-tenant setups
+- **API Key Validation**: Pre-validation tegen Qlik Cloud tenant
+- **Credential Masking**: Sensitive data masking in logs
+
+### Validation
+- **File Path Validation**: Protection tegen directory traversal attacks
+- **Parameter Validation**: Type checking en range validation
+- **Tenant URL Validation**: Qlik Cloud domain pattern verification
+- **Permission Checks**: Space en app access validation
+
+## Logging and Monitoring
+
+### Logging Infrastructure
+- **Multi-level Logging**: DEBUG, INFO, WARNING, ERROR levels
+- **Dual Output**: Console en file logging (qlik-mcp-server.log)
+- **Structured Logging**: Consistent format voor alle operations
+- **Sensitive Data Protection**: API key masking in log output
+
+### Monitoring Capabilities
+- **Command Execution Tracking**: Timing en success/failure rates
+- **Error Categorization**: Detailed error types en messages
+- **Performance Metrics**: Duration tracking voor operations
+- **Connection Validation**: Health checks voor Qlik Cloud connectivity
+
+## Current Status and Capabilities
+
+### Fully Implemented Features
+- ✅ FastMCP server met 16 tools
+- ✅ App lifecycle management (export, import, copy, publish)
+- ✅ App discovery en search functionaliteiten
+- ✅ Context management voor multi-tenant authenticatie
+- ✅ Comprehensive error handling en logging
+- ✅ Security features en validation
+- ✅ Configuration management
+- ✅ Documentation en type safety
+
+### Development Areas
+- 🔄 Unit testing framework
+- 🔄 Integration testing
+- 🔄 Performance optimization
+- 🔄 Advanced monitoring features
+- 🔄 Batch operations support
+- 🔄 Automated backup workflows
+
+## File Size Summary
+- **Total Repository**: ~140 KB (excluding cache)
+- **Core Application**: app.py (47.2 KB) + qlik_tools.py (66.8 KB) = 114 KB
+- **Configuration**: config.py (5.9 KB)
+- **Documentation**: project_info.txt (15.6 KB) + other docs
+- **Dependencies**: requirements.txt (364 bytes)
+
+This repository represents a mature, production-ready MCP server implementation with comprehensive Qlik Cloud integration capabilities, robust error handling, and extensive documentation.
